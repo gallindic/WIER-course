@@ -1,7 +1,7 @@
 import threading
 from urllib.parse import urlparse
 from bs4 import BeautifulSoup
-from db.dblib import get_next_seed
+from db.db import get_next_seed
 
 
 class Crawler(threading.Thread):

@@ -1,9 +1,8 @@
 from crawler.crawler import Crawler
+from crawler.frontier import process_frontier
 from argparse import ArgumentParser
 
-seeds = ['http://www.mgrt.gov.si/','http://www.mz.gov.si/',
-            'http://www.uvps.gov.si/','http://www.mju.gov.si/',
-            'http://www.osha.mddsz.gov.si/']
+seeds = ['https://www.gov.si/', 'https://www.evem.gov.si/', 'https://e-uprava.gov.si/', 'https://www.e-prostor.gov.si/']
 
 def args():
     parser = ArgumentParser()
@@ -19,8 +18,7 @@ def init_frontier():
     Initializes frontier table in DB
     """
     for seed in seeds:
-        #Saves seed to pages table in DB
-        pass
+        process_frontier(seed)
     
     print("Frontier initialized")
 
