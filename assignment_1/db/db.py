@@ -1,18 +1,23 @@
-import psycopg2
 import threading
-from psycopg2 import pool
+import configparser
+from datetime import date
+from psycopg2 import pool, DatabaseError
+
+config = configparser.ConfigParser()
+config.read('db/db.ini')
 
 try:
     thread_pool = pool.ThreadedConnectionPool(1, 32,
-                                                        database="postgres",
-                                                        user="postgres",
-                                                        password="root",
-                                                        host="localhost",
-                                                        port="5432")
+                                                        database=config['postgresDB']['db'],
+                                                        user=config['postgresDB']['user'],
+                                                        password=config['postgresDB']['pass'],
+                                                        host=config['postgresDB']['host'],
+                                                        port=config['postgresDB']['port'])
     lock = threading.Lock()
     print("Connection established successfully")
 except Exception as e:
     print("Connection failed:", e)
+
 
 def get_site_id(domain):
     try:
@@ -22,12 +27,61 @@ def get_site_id(domain):
         cur.execute(sql, (domain,))
         id = cur.fetchone()
         cur.close()
-        thread_pool.putconn(conn)
     except Exception as e:
         print("Query failed:", e)
         id = None
     finally:
+        thread_pool.putconn(conn)
         return id
+
+
+def get_page_by_url(seed):
+    try:
+        conn = thread_pool.getconn()
+        cur = conn.cursor()
+        sql = "SELECT id FROM crawldb.page WHERE url=%s"
+        cur.execute(sql, (seed,))
+        id = cur.fetchone()
+        cur.close()
+        return id
+    except Exception as e:
+        print("Query failed:", e)
+    finally:
+        thread_pool.putconn(conn)
+
+
+def get_page_by_canon_url(canon_seed):
+    try:
+        conn = thread_pool.getconn()
+        cur = conn.cursor()
+        sql = "SELECT id FROM crawldb.page WHERE canonUrl=%s"
+        cur.execute(sql, (canon_seed,))
+        id = cur.fetchone()
+        cur.close()
+    except Exception as e:
+        print("Query failed:", e)
+        id = None
+    finally:
+        thread_pool.putconn(conn)
+        return id
+
+
+def get_duplicate_page_id(canon_url):
+    try:
+        ps_connection = thread_pool.getconn()
+        cur = ps_connection.cursor()
+        sql = """SELECT id FROM crawldb.page WHERE canonUrl = %s AND page_type_code != 'DUPLICATE'"""
+        cur.execute(sql, (canon_url,))
+        id = cur.fetchone()[0]
+        cur.close()
+        thread_pool.putconn(ps_connection)
+        print("Duplicate %s found" % canon_url)
+        return id
+    except (Exception, DatabaseError, pool.PoolError) as error:
+        ps_connection.rollback()
+        thread_pool.putconn(ps_connection)
+        print(error)
+
 
 def insert_site(domain, robots_content, sitemap_content):
     try:
@@ -36,26 +90,79 @@ def insert_site(domain, robots_content, sitemap_content):
         sql = "INSERT INTO crawldb.site (domain, robots_content, sitemap_content) VALUES (%s, %s, %s)"
         cur.execute(sql, (domain, robots_content, sitemap_content))
         conn.commit()
-        thread_pool.putconn(conn)
         print("Site %s inserted successfully" % domain)
     except Exception as e:
         print("Insertion failed:", e)
+    finally:
+        thread_pool.putconn(conn)
 
-def insert_page(site_id, page_type_code, url, html_content=None, http_status_code=None, accessed_time=None):
+
+def insert_page(site_id, page_type_code, url, html_content=None, http_status_code=None, accessed_time=None, hash=None, canon_url=None):
     try:
         conn = thread_pool.getconn()
         cur = conn.cursor()
-        sql = "INSERT INTO crawldb.page (site_id, page_type_code, url, html_content, http_status_code, accessed_time) VALUES (%s, %s, %s, %s, %s, %s)"
-        cur.execute(sql, (site_id, page_type_code, url, html_content, http_status_code, accessed_time))
+        sql = "INSERT INTO crawldb.page (site_id, page_type_code, url, html_content, http_status_code, accessed_time, canonUrl, hash) VALUES (%s, %s, %s, %s, %s, %s, %s, %s) returning id;"
+        cur.execute(sql, (site_id, page_type_code, url, html_content, http_status_code, accessed_time, canon_url, hash))
         conn.commit()
-        thread_pool.putconn(conn)
+        page = cur.fetchone()
         print("Page %s inserted successfully" % url)
+        return page
     except Exception as e:
         print("Insertion failed:", e)
+    finally:
+        thread_pool.putconn(conn)
+
+
+def insert_link(from_page, to_page):
+    try:
+        ps_connection = thread_pool.getconn()
+        cur = ps_connection.cursor()
+        sql = """INSERT INTO crawldb.link(from_page, to_page) VALUES(%s, %s);"""
+        cur.execute(sql, (from_page, to_page))
+        ps_connection.commit()
+        thread_pool.putconn(ps_connection)
+    except (Exception, DatabaseError, pool.PoolError) as error:
+        ps_connection.rollback()
+        thread_pool.putconn(ps_connection)
+        print(error)
+
+
+def update_frontier_entry(page_id, url, html_content, page_type_code, http_status_code, hash=None, canon_url=None):
+    try:
+        conn = thread_pool.getconn()
+        lock.acquire()
+        cur = conn.cursor()
+        sql = "UPDATE crawldb.page SET page_type_code=%s, html_content=%s, http_status_code=%s, accessed_time=%s, canonUrl=%s, hash=%s where id=%s"
+        cur.execute(sql, (page_type_code, html_content, http_status_code, date.today(), canon_url, hash, page_id))
+        conn.commit()
+        lock.release()
+        print("Page %s updated successfully" % url)
+    except Exception as e:
+        print("Insertion failed:", e)
+    finally:
+        thread_pool.putconn(conn)
 
 
 def get_next_seed():
     """
     Get next seed from frontier in DB
     """
-    raise NotImplementedError()
+    try:
+        conn = thread_pool.getconn()
+        lock.acquire()
+        cur = conn.cursor()
+        sql = """update crawldb.page set page_type_code=%s
+                 where id=(select id from crawldb.page where page_type_code=%s LIMIT 1)
+                 returning id, url"""
+        cur.execute(sql, (None, 'FRONTIER'))
+        conn.commit()
+        page = cur.fetchone()
+        lock.release()
+        thread_pool.putconn(conn)
+        return page
+
+    except (Exception, DatabaseError, pool.PoolError) as error:
+        conn.rollback()
+        lock.release()
+        thread_pool.putconn(conn)
+        print(error)
