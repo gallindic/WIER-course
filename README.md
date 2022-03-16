@@ -11,3 +11,7 @@
     - General tab: set name to "wier"
     - Connection tab: set host name/address to `IPAddress`, username to "root" and password to "root"
 6. Create a new DB schema from the `crawldb.sql` file
+
+### Setting DB connection
+1. Open `assignment_1/db/db.ini`
+2. Set host to match postgres host name/address (localhost, 172.20...)
