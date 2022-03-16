@@ -45,4 +45,4 @@ if __name__ == "__main__":
         init_frontier()
         exit(0)
     
-    main(arguments.threads)
+    #main(arguments.threads)

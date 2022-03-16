@@ -1,6 +1,7 @@
 from urllib.parse import urlparse
 import requests
 import re
+from db.db import get_site_id, insert_site, insert_page
 
 def process_robots(path):
     try:
@@ -22,9 +23,12 @@ def process_frontier(seed):
     print("Processing", seed)
 
     url_parsed = urlparse(seed)
+    domain = url_parsed.netloc
     
     robots = process_robots(seed + "robots.txt")
     sitemap = process_sitemap(robots) if robots is not None else None
 
-    print(robots)
-    print(sitemap[:100])
+    site_id = get_site_id(domain)
+    if site_id is None: insert_site(domain, robots, sitemap)
+
+    insert_page(site_id, "FRONTIER", seed)
