@@ -6,7 +6,7 @@ from selenium import webdriver
 from urllib.parse import urlparse
 from bs4 import BeautifulSoup
 from .frontier import process_frontier
-from db.db import get_next_seed, update_frontier_entry
+from db.db import get_next_seed, update_frontier_entry, get_page_id_by_hash, insert_link
 
 
 class Crawler(threading.Thread):
@@ -18,7 +18,7 @@ class Crawler(threading.Thread):
 
     def _init_webdriver(self):
         options = webdriver.ChromeOptions()
-        options.add_argument('--user-agent= Mozilla/5.0 (Macintosh; Intel Mac OS X 10.14; rv:70.0) Gecko/20100101 Firefox/70.0');
+        options.add_argument('--user-agent=fri-wier-course-group');
         options.add_argument('--disable-browser-side-navigation')
         options.headless = True
         options.add_argument('--no-sandbox')
@@ -61,8 +61,15 @@ class Crawler(threading.Thread):
 
         if is_html:
             html_hash = hashlib.md5(html_content.encode()).hexdigest()
-            update_frontier_entry(page_id, response.url, html_content, page_type_code, response.status_code, hash=html_hash)
 
+            duplicate_page_id = get_page_id_by_hash(html_hash)
+            if duplicate_page_id:
+                print("duplicate")
+                insert_link(page_id, duplicate_page_id)
+                page_type_code = 'DUPLICATE'
+                html_content = None
+
+            update_frontier_entry(page_id, response.url, html_content, page_type_code, response.status_code, hash=html_hash)
             self.parse_html(response.url, html_content, page_id)
         else:
             #save biniaries

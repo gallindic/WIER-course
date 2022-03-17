@@ -26,7 +26,6 @@ CREATE TABLE crawldb.page (
 	html_content         text  ,
 	http_status_code     integer  ,
 	accessed_time        timestamp  ,
-	canonUrl			 varchar(3000) ,
 	hash				 varchar(255),
 	CONSTRAINT pk_page_id PRIMARY KEY ( id ),
 	CONSTRAINT unq_url_idx UNIQUE ( url ) 

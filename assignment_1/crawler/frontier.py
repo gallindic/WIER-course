@@ -2,7 +2,7 @@ from os import dup
 from urllib.parse import urlparse
 import requests
 import re
-from db.db import get_site_id, insert_site, insert_page, get_page_by_canon_url, insert_link, get_duplicate_page_id, get_page_by_url
+from db.db import get_site_id, insert_site, insert_page, get_page_by_canon_url, insert_link, get_duplicate_page_id, get_page_by_url, page_link_exists
 
 DOMAINS = ['www.gov.si', 'www.evem.gov.si', 'www.e-uprava.gov.si', 'www.e-prostor.gov.si']
 
@@ -42,29 +42,28 @@ def init_frontier(seed):
 def process_frontier(seed, domain, current_page_id):
     if domain not in DOMAINS:
         return
-    elif get_page_by_url(seed) is not None:
-        return
 
     url_parsed = urlparse(seed)
     seedCanonicalization = url_parsed.netloc + url_parsed.path
     seedCanonicalization = seedCanonicalization + '?' + url_parsed.query if url_parsed.query != "" else seedCanonicalization
     seedCanonicalization = seedCanonicalization[:-1] if seedCanonicalization.endswith('/') else seedCanonicalization
+    
+    if url_parsed.scheme and url_parsed.scheme not in seedCanonicalization:
+        seedCanonicalization = url_parsed.scheme + '://' + seedCanonicalization
+    elif 'http' not in seedCanonicalization:
+        seedCanonicalization = 'http://' + seedCanonicalization
 
-    duplicate = False
+    duplicate_page_id = get_page_by_url(seedCanonicalization)
 
-    if get_page_by_canon_url(seedCanonicalization) is not None:
-        page_type_code = 'DUPLICATE'
-        duplicate = True
-    else:
-        page_type_code = 'FRONTIER'
+    if duplicate_page_id is not None:
+        if not page_link_exists(current_page_id, duplicate_page_id[0]):
+            insert_link(current_page_id, duplicate_page_id[0])
+        
+        return
 
     site_id = get_site_id(domain)
-    next_page_id = insert_page(site_id, page_type_code, seed, html_content=None, canon_url=seedCanonicalization)
-
-    if next_page_id:
+    next_page_id = insert_page(site_id, 'FRONTIER', seedCanonicalization, html_content=None)
+    
+    if not page_link_exists(current_page_id, next_page_id[0]):
         insert_link(current_page_id, next_page_id[0])
-
-    if duplicate and next_page_id:
-        duplicate_page_id = get_duplicate_page_id(seedCanonicalization)
-        insert_link(next_page_id[0], duplicate_page_id)
         
