@@ -8,7 +8,7 @@ def args():
     parser = ArgumentParser()
 
     parser.add_argument('--initFrontier', default=0, type=int, help='Initialized frontier with seed pages')
-    parser.add_argument('--threads', default=8, type=int, help='Number of threads to run')
+    parser.add_argument('--threads', default=1, type=int, help='Number of threads to run')
 
     return parser.parse_args()
 

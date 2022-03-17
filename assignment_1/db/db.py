@@ -70,7 +70,7 @@ def get_duplicate_page_id(canon_url):
     try:
         ps_connection = thread_pool.getconn()
         cur = ps_connection.cursor()
-        sql = """SELECT id FROM crawldb.page WHERE canonUrl = %s AND page_type_code != 'DUPLICATE'"""
+        sql = """SELECT id FROM crawldb.page WHERE url = %s AND page_type_code != 'DUPLICATE'"""
         cur.execute(sql, (canon_url,))
         id = cur.fetchone()[0]
         cur.close()
@@ -81,6 +81,24 @@ def get_duplicate_page_id(canon_url):
         ps_connection.rollback()
         thread_pool.putconn(ps_connection)
         print(error)
+
+
+def get_page_id_by_hash(hash):
+    try:
+        ps_connection = thread_pool.getconn()
+        cur = ps_connection.cursor()
+        sql = """SELECT id FROM crawldb.page WHERE hash = %s"""
+        cur.execute(sql, (hash))
+        id = cur.fetchone()[0]
+        cur.close()
+        thread_pool.putconn(ps_connection)
+        print("Hash duplicate %s found" % hash)
+        return id
+    except (Exception, DatabaseError, pool.PoolError) as error:
+        ps_connection.rollback()
+        thread_pool.putconn(ps_connection)
+        print(error)
+
 
 
 def insert_site(domain, robots_content, sitemap_content):
@@ -97,16 +115,31 @@ def insert_site(domain, robots_content, sitemap_content):
         thread_pool.putconn(conn)
 
 
-def insert_page(site_id, page_type_code, url, html_content=None, http_status_code=None, accessed_time=None, hash=None, canon_url=None):
+def insert_page(site_id, page_type_code, url, html_content=None, http_status_code=None, accessed_time=None, hash=None):
     try:
         conn = thread_pool.getconn()
         cur = conn.cursor()
-        sql = "INSERT INTO crawldb.page (site_id, page_type_code, url, html_content, http_status_code, accessed_time, canonUrl, hash) VALUES (%s, %s, %s, %s, %s, %s, %s, %s) returning id;"
-        cur.execute(sql, (site_id, page_type_code, url, html_content, http_status_code, accessed_time, canon_url, hash))
+        sql = "INSERT INTO crawldb.page (site_id, page_type_code, url, html_content, http_status_code, accessed_time, hash) VALUES (%s, %s, %s, %s, %s, %s, %s) returning id;"
+        cur.execute(sql, (site_id, page_type_code, url, html_content, http_status_code, accessed_time, hash))
         conn.commit()
         page = cur.fetchone()
         print("Page %s inserted successfully" % url)
         return page
+    except Exception as e:
+        print("Insertion failed:", e)
+    finally:
+        thread_pool.putconn(conn)
+
+
+def page_link_exists(from_page, to_page):
+    try:
+        conn = thread_pool.getconn()
+        cur = conn.cursor()
+        sql = "SELECT from_page FROM crawldb.link WHERE from_page=%s AND to_page=%s;"
+        cur.execute(sql, (from_page, to_page))
+        conn.commit()
+        id = cur.fetchone()
+        return id
     except Exception as e:
         print("Insertion failed:", e)
     finally:
@@ -127,13 +160,13 @@ def insert_link(from_page, to_page):
         print(error)
 
 
-def update_frontier_entry(page_id, url, html_content, page_type_code, http_status_code, hash=None, canon_url=None):
+def update_frontier_entry(page_id, url, html_content, page_type_code, http_status_code, hash=None):
     try:
         conn = thread_pool.getconn()
         lock.acquire()
         cur = conn.cursor()
-        sql = "UPDATE crawldb.page SET page_type_code=%s, html_content=%s, http_status_code=%s, accessed_time=%s, canonUrl=%s, hash=%s where id=%s"
-        cur.execute(sql, (page_type_code, html_content, http_status_code, date.today(), canon_url, hash, page_id))
+        sql = "UPDATE crawldb.page SET page_type_code=%s, html_content=%s, http_status_code=%s, accessed_time=%s, hash=%s where id=%s"
+        cur.execute(sql, (page_type_code, html_content, http_status_code, date.today(), hash, page_id))
         conn.commit()
         lock.release()
         print("Page %s updated successfully" % url)
