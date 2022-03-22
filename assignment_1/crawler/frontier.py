@@ -1,12 +1,20 @@
+import time
 from os import dup
 from urllib.parse import urlparse
+import urllib.robotparser
 import requests
 import re
-from db.db import get_site_id, insert_site, insert_page, get_page_by_canon_url, insert_link, get_duplicate_page_id, get_page_by_url, page_link_exists
+from user_agents import parse
+from assignment_1.db.db import get_site_id, insert_site, insert_page, get_page_by_canon_url, insert_link, \
+    get_duplicate_page_id, get_page_by_url, page_link_exists, getRobots
 
 DOMAINS = ['www.gov.si', 'www.evem.gov.si', 'www.e-uprava.gov.si', 'www.e-prostor.gov.si']
 
+useragent = "fri-wier-NAME_OF_YOUR_GROUP"
+
+
 def process_robots(path):
+
     try:
         response = requests.get(path)
         if response.status_code == 200:
@@ -29,7 +37,7 @@ def init_frontier(seed):
 
     url_parsed = urlparse(seed)
     domain = url_parsed.netloc
-    
+
     robots = process_robots(seed + "robots.txt")
     sitemap = process_sitemap(robots) if robots is not None else None
 
@@ -43,11 +51,25 @@ def process_frontier(seed, domain, current_page_id):
     if domain not in DOMAINS:
         return
 
+    robots_ct = getRobots(get_site_id(domain))
+
+    if robots_ct is not None:
+        rbtparser = urllib.robotparser.RobotFileParser()
+        rbtparser.parse(robots_ct.splitlines())
+
+        if not rbtparser.can_fetch(useragent, seed):
+            print("Not allowed on this site!")
+            return
+
+        delay = rbtparser.crawl_delay(useragent)
+        if delay is not None:
+            time.sleep(delay)
+
     url_parsed = urlparse(seed)
     seedCanonicalization = url_parsed.netloc + url_parsed.path
     seedCanonicalization = seedCanonicalization + '?' + url_parsed.query if url_parsed.query != "" else seedCanonicalization
     seedCanonicalization = seedCanonicalization[:-1] if seedCanonicalization.endswith('/') else seedCanonicalization
-    
+
     if url_parsed.scheme and url_parsed.scheme not in seedCanonicalization:
         seedCanonicalization = url_parsed.scheme + '://' + seedCanonicalization
     elif 'http' not in seedCanonicalization:
@@ -58,12 +80,11 @@ def process_frontier(seed, domain, current_page_id):
     if duplicate_page_id is not None:
         if not page_link_exists(current_page_id, duplicate_page_id[0]):
             insert_link(current_page_id, duplicate_page_id[0])
-        
+
         return
 
     site_id = get_site_id(domain)
     next_page_id = insert_page(site_id, 'FRONTIER', seedCanonicalization, html_content=None)
-    
+
     if not page_link_exists(current_page_id, next_page_id[0]):
         insert_link(current_page_id, next_page_id[0])
-        

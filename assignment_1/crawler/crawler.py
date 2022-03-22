@@ -6,7 +6,7 @@ from selenium import webdriver
 from urllib.parse import urlparse
 from bs4 import BeautifulSoup
 from .frontier import process_frontier
-from db.db import get_next_seed, update_frontier_entry, get_page_id_by_hash, insert_link
+from assignment_1.db.db import get_next_seed, update_frontier_entry, get_page_id_by_hash, insert_link
 import time
 
 
@@ -57,7 +57,7 @@ class Crawler(threading.Thread):
         # Wait 5 seconds between crawling
         time.sleep(5)
         print("Waiting 5 seconds")
-        
+
         self.driver.get(response.url)
 
         html_content = self.driver.page_source

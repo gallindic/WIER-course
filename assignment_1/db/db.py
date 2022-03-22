@@ -99,6 +99,21 @@ def get_page_id_by_hash(hash):
         thread_pool.putconn(ps_connection)
         print(error)
 
+def getRobots(siteId):
+    try:
+        ps_connection = thread_pool.getconn()
+        cur = ps_connection.cursor()
+        sql = """SELECT robots_content FROM crawldb.site WHERE id=%s"""
+        cur.execute(sql, (siteId,))
+        data = cur.fetchone()[0]
+        cur.close()
+        thread_pool.putconn(ps_connection)
+        return data
+
+    except (Exception, psycopg2.DatabaseError, pool.PoolError) as error:
+        ps_connection.rollback()
+        thread_pool.putconn(ps_connection)
+        print(error)
 
 
 def insert_site(domain, robots_content, sitemap_content):
