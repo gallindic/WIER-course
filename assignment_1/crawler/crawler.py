@@ -7,18 +7,19 @@ from urllib.parse import urlparse
 from bs4 import BeautifulSoup
 from .frontier import process_frontier
 from db.db import get_next_seed, update_frontier_entry, get_page_id_by_hash, insert_link
+import time
 
 
 class Crawler(threading.Thread):
     def __init__(self, thread_id):
         threading.Thread.__init__(self)
         self.thread_id = thread_id
+        self.user_agent = "fri-wier-course-group"
         self.driver = self._init_webdriver()
-
 
     def _init_webdriver(self):
         options = webdriver.ChromeOptions()
-        options.add_argument('--user-agent=fri-wier-course-group');
+        options.add_argument('--user-agent=%s' % self.user_agent)
         options.add_argument('--disable-browser-side-navigation')
         options.headless = True
         options.add_argument('--no-sandbox')
@@ -53,6 +54,10 @@ class Crawler(threading.Thread):
 
 
     def crawl_page(self, page_id, response):
+        # Wait 5 seconds between crawling
+        time.sleep(5)
+        print("Waiting 5 seconds")
+        
         self.driver.get(response.url)
 
         html_content = self.driver.page_source
@@ -72,7 +77,7 @@ class Crawler(threading.Thread):
             update_frontier_entry(page_id, response.url, html_content, page_type_code, response.status_code, hash=html_hash)
             self.parse_html(response.url, html_content, page_id)
         else:
-            #save biniaries
+            #save binaries
             pass
 
 

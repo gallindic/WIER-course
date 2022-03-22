@@ -1,6 +1,6 @@
 import threading
 import configparser
-from datetime import date
+from datetime import datetime
 from psycopg2 import pool, DatabaseError
 
 config = configparser.ConfigParser()
@@ -166,7 +166,7 @@ def update_frontier_entry(page_id, url, html_content, page_type_code, http_statu
         lock.acquire()
         cur = conn.cursor()
         sql = "UPDATE crawldb.page SET page_type_code=%s, html_content=%s, http_status_code=%s, accessed_time=%s, hash=%s where id=%s"
-        cur.execute(sql, (page_type_code, html_content, http_status_code, date.today(), hash, page_id))
+        cur.execute(sql, (page_type_code, html_content, http_status_code, datetime.now(), hash, page_id))
         conn.commit()
         lock.release()
         print("Page %s updated successfully" % url)
