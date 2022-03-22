@@ -185,7 +185,7 @@ def get_next_seed():
         lock.acquire()
         cur = conn.cursor()
         sql = """update crawldb.page set page_type_code=%s
-                 where id=(select id from crawldb.page where page_type_code=%s LIMIT 1)
+                 where id=(select id from crawldb.page where page_type_code=%s ORDER BY id LIMIT 1)
                  returning id, url"""
         cur.execute(sql, (None, 'FRONTIER'))
         conn.commit()
