@@ -29,7 +29,6 @@ class Crawler(threading.Thread):
 
         return driver
 
-
     def process_link(self, link, url, page_id):
         url_scheme = urlparse(url)
 
@@ -38,9 +37,8 @@ class Crawler(threading.Thread):
                 link = url_scheme.scheme + '://' + url_scheme.netloc + '/' + link
             else:
                 link = url_scheme.scheme + '://' + url_scheme.netloc + link
-        
-        process_frontier(link, urlparse(link).netloc, page_id)
 
+        process_frontier(link, urlparse(link).netloc, page_id)
 
     def parse_html(self, url, html_content, page_id):
         soup = BeautifulSoup(html_content, 'html.parser')
@@ -52,11 +50,31 @@ class Crawler(threading.Thread):
             new_link = str(link.get('href'))
             self.process_link(new_link, url, page_id)
 
+    def __del__(self):
+        self.driver.quit()
+
+    def parse_onclick(self, page_id):
+        for onclick in self.driver.find_elements_by_xpath('//*[@onclick]'):
+            onclick.click()
+            window_handles = self.driver.window_handles
+
+            if len(window_handles) > 1:
+                self.driver.switch_to.window(window_handles[1])
+
+            process_frontier(self.driver.current_url, urlparse(self.driver.current_url).netloc, page_id, onclick=True)
+
+            if len(window_handles) == 1:
+                self.driver.back()
+            else:
+                for window in window_handles[1:]:
+                    self.driver.switch_to.window(window)
+                    self.driver.close()
+                self.driver.switch_to.window(window_handles[0])
 
     def crawl_page(self, page_id, response):
         # Wait 5 seconds between crawling
-        time.sleep(5)
-        print("Waiting 5 seconds")
+        # time.sleep(5)
+        # print("Waiting 5 seconds")
 
         self.driver.get(response.url)
 
@@ -67,6 +85,8 @@ class Crawler(threading.Thread):
         if is_html:
             html_hash = hashlib.md5(html_content.encode()).hexdigest()
 
+            self.parse_onclick(page_id)
+
             duplicate_page_id = get_page_id_by_hash(html_hash)
             if duplicate_page_id:
                 print("duplicate")
@@ -74,12 +94,12 @@ class Crawler(threading.Thread):
                 page_type_code = 'DUPLICATE'
                 html_content = None
 
-            update_frontier_entry(page_id, response.url, html_content, page_type_code, response.status_code, hash=html_hash)
+            update_frontier_entry(page_id, response.url, html_content, page_type_code, response.status_code,
+                                  hash=html_hash)
             self.parse_html(response.url, html_content, page_id)
         else:
-            #save binaries
+            # save binaries
             pass
-
 
     def run(self):
         next_page = get_next_seed()
@@ -89,7 +109,7 @@ class Crawler(threading.Thread):
 
             url = url.replace('www.', '')
             response = requests.get(url)
-            
+
             self.crawl_page(page_id, response)
 
             next_page = get_next_seed()
