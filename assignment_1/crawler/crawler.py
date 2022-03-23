@@ -1,20 +1,26 @@
 import hashlib
+import io
+import urllib
+
 import requests
 import hashlib
 import threading
 import wget
 import os
 from selenium import webdriver
+from PIL import Image
 from urllib.parse import urlparse
 from bs4 import BeautifulSoup
 from .frontier import process_frontier
-from assignment_1.db.db import get_next_seed, update_frontier_entry, get_page_id_by_hash, insert_link, insertBinary
+from assignment_1.db.db import get_next_seed, update_frontier_entry, get_page_id_by_hash, insert_link,\
+    insert_image, insert_binary
 import time
 
-
 binaryFiles = ['.pdf', '.doc', '.ppt', '.docx', '.pptx']
-saveBinaries = 0
+saveBinaries = 1
+saveImages = 1
 cur = os.getcwd()
+
 
 class Crawler(threading.Thread):
     def __init__(self, thread_id):
@@ -51,6 +57,15 @@ class Crawler(threading.Thread):
 
         for s in soup(['script', 'style']):
             s.decompose()
+
+        for imageTag in soup.find_all('img'):
+            src = str(imageTag.get('src'))
+
+            if 'http' not in src:
+                urlParsed = urlparse(url)
+                src = urlParsed.scheme + '://' + urlParsed.netloc + src
+
+            self.process_image(src, page_id)
 
         for link in soup.find_all('a', href=True):
             new_link = str(link.get('href'))
@@ -130,7 +145,7 @@ class Crawler(threading.Thread):
                     try:
                         if saveBinaries == 1:
                             urlData = None
-                        insertBinary(page_id, suffix, response)
+                        insert_binary(page_id, suffix, response)
 
                         if saveBinaries == 0:
                             if not os.path.exists(str(page_id)):
@@ -140,6 +155,59 @@ class Crawler(threading.Thread):
                         print(error)
 
             pass
+
+    def process_image(self, url, page_id):
+        print('processing image')
+        try:
+            urlParts = urllib.parse.urlparse(url)
+            name = urlParts[2].rpartition('/')[2]
+
+            type = 'unknown'
+
+            imageRequest = requests.get(url, stream=True).raw
+            imageObject = Image.open(imageRequest)
+
+            imageBytes = io.BytesIO()
+
+            if '.jpg' in url or '.jpeg' in url:
+                imageObject.save(imageBytes, format='JPEG')
+                type = 'JPG' if '.jpeg' in url else 'JPEG'
+
+            elif '.png' in url:
+                imageObject.save(imageBytes, format='PNG')
+                type = 'PNG'
+
+            elif '.gif' in url:
+                imageObject.save(imageBytes, format='GIF')
+                type = 'GIF'
+
+            elif '.tiff' in url:
+                imageObject.save(imageBytes, format='TIFF')
+                type = 'TIFF'
+
+            elif '.webp' in url:
+                imageObject.save(imageBytes, format='WEBP')
+                type = 'WEBP'
+
+            elif '.bmp' in url:
+                imageObject.save(imageBytes, format='BMP')
+                type = 'BMP'
+
+            else:
+                imageObject.save(imageBytes)
+
+            if saveImages == 1:
+                imageBytes = None
+
+            if saveImages == 0:
+                if not os.path.exists(str(page_id)):
+                    os.mkdir(str(page_id))
+                wget.download(url, out=str(str(page_id) + '\\'))
+
+            insert_image(page_id, name, type, imageBytes)
+
+        except (Exception, IOError) as error:
+            print(error)
 
     def run(self):
         next_page = get_next_seed()

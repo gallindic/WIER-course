@@ -10,11 +10,11 @@ config.read('db/db.ini')
 
 try:
     thread_pool = pool.ThreadedConnectionPool(1, 32,
-                                                        database=config['postgresDB']['db'],
-                                                        user=config['postgresDB']['user'],
-                                                        password=config['postgresDB']['pass'],
-                                                        host=config['postgresDB']['host'],
-                                                        port=config['postgresDB']['port'])
+                                              database=config['postgresDB']['db'],
+                                              user=config['postgresDB']['user'],
+                                              password=config['postgresDB']['pass'],
+                                              host=config['postgresDB']['host'],
+                                              port=config['postgresDB']['port'])
     lock = threading.Lock()
     print("Connection established successfully")
 except Exception as e:
@@ -100,6 +100,7 @@ def get_page_id_by_hash(hash):
         ps_connection.rollback()
         thread_pool.putconn(ps_connection)
         print(error)
+
 
 def getRobots(siteId):
     try:
@@ -192,7 +193,8 @@ def update_frontier_entry(page_id, url, html_content, page_type_code, http_statu
     finally:
         thread_pool.putconn(conn)
 
-def insertBinary(seedID, dataType, urlData):
+
+def insert_binary(seedID, dataType, urlData):
     try:
         ps_connection = thread_pool.getconn()
         cur = ps_connection.cursor()
@@ -211,6 +213,23 @@ def insertBinary(seedID, dataType, urlData):
         print(error)
         ps_connection.rollback()
         thread_pool.putconn(ps_connection)
+
+
+def insert_image(seedID, imageName, imageContentType, imageBytes):
+    try:
+        ps_connection = thread_pool.getconn()
+        cur = ps_connection.cursor()
+        sql = """INSERT INTO crawldb.image(page_id, filename, content_type, data, accessed_time)
+                             VALUES (%s,%s, %s, %s, %s);"""
+        cur.execute(sql, (seedID, imageName, imageContentType, imageBytes.getvalue(), datetime.now()))
+        ps_connection.commit()
+        thread_pool.putconn(ps_connection)
+
+    except (Exception, psycopg2.DatabaseError, pool.PoolError) as error:
+        print(error)
+        ps_connection.rollback()
+        thread_pool.putconn(ps_connection)
+
 
 def get_next_seed():
     """
