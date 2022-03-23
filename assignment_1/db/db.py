@@ -1,6 +1,8 @@
 import threading
 import configparser
 from datetime import datetime
+
+import psycopg2
 from psycopg2 import pool, DatabaseError
 
 config = configparser.ConfigParser()
@@ -190,6 +192,25 @@ def update_frontier_entry(page_id, url, html_content, page_type_code, http_statu
     finally:
         thread_pool.putconn(conn)
 
+def insertBinary(seedID, dataType, urlData):
+    try:
+        ps_connection = thread_pool.getconn()
+        cur = ps_connection.cursor()
+        # obtaing data_type_code from binary file
+        sql = """select code from crawldb.data_type where code like %s"""
+        cur.execute(sql, (dataType.split('.')[1].upper(),))
+        extension = cur.fetchone()
+        if extension is not None:
+            sql = """INSERT INTO crawldb.page_data(page_id, data_type_code, data)
+                                VALUES (%s, %s, %s);"""
+            cur.execute(sql, (seedID, extension, psycopg2.Binary(urlData.content)))
+            ps_connection.commit()
+        thread_pool.putconn(ps_connection)
+
+    except (Exception, psycopg2.DatabaseError, pool.PoolError) as error:
+        print(error)
+        ps_connection.rollback()
+        thread_pool.putconn(ps_connection)
 
 def get_next_seed():
     """

@@ -2,13 +2,19 @@ import hashlib
 import requests
 import hashlib
 import threading
+import wget
+import os
 from selenium import webdriver
 from urllib.parse import urlparse
 from bs4 import BeautifulSoup
 from .frontier import process_frontier
-from assignment_1.db.db import get_next_seed, update_frontier_entry, get_page_id_by_hash, insert_link
+from assignment_1.db.db import get_next_seed, update_frontier_entry, get_page_id_by_hash, insert_link, insertBinary
 import time
 
+
+binaryFiles = ['.pdf', '.doc', '.ppt', '.docx', '.pptx']
+saveBinaries = 0
+cur = os.getcwd()
 
 class Crawler(threading.Thread):
     def __init__(self, thread_id):
@@ -79,8 +85,25 @@ class Crawler(threading.Thread):
         self.driver.get(response.url)
 
         html_content = self.driver.page_source
-        is_html = 'html' in html_content
-        page_type_code = 'HTML' if is_html else 'BINARY'
+        # is_html = 'html' in html_content
+        # page_type_code = 'HTML' if is_html else 'BINARY'
+
+        data = {}
+
+        print(response.url)
+
+        print(response.headers['content-type'])
+
+        if 'text/html' in response.headers['content-type']:
+            data = response.text
+            page_type_code = 'HTML'
+            is_html = True
+        else:
+            data = response.content
+            page_type_code = 'BINARY'
+            is_html = False
+
+        print(page_type_code)
 
         if is_html:
             html_hash = hashlib.md5(html_content.encode()).hexdigest()
@@ -99,6 +122,23 @@ class Crawler(threading.Thread):
             self.parse_html(response.url, html_content, page_id)
         else:
             # save binaries
+
+            urlData = response.url
+
+            for suffix in binaryFiles:
+                if suffix in urlData:
+                    try:
+                        if saveBinaries == 1:
+                            urlData = None
+                        insertBinary(page_id, suffix, response)
+
+                        if saveBinaries == 0:
+                            if not os.path.exists(str(page_id)):
+                                os.mkdir(str(page_id))
+                            wget.download(response.url, out=str(str(page_id) + '\\'))
+                    except Exception as error:
+                        print(error)
+
             pass
 
     def run(self):
