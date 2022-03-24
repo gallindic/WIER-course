@@ -13,8 +13,9 @@ from urllib.parse import urlparse
 from bs4 import BeautifulSoup
 from .frontier import process_frontier
 from db.db import get_next_seed, update_frontier_entry, get_page_id_by_hash, insert_link,\
-    insert_image, insert_binary
+    insert_image, insert_binary, get_last_inserted
 import time
+import datetime
 
 binaryFiles = ['.pdf', '.doc', '.ppt', '.docx', '.pptx']
 saveBinaries = 1
@@ -23,9 +24,10 @@ cur = os.getcwd()
 
 
 class Crawler(threading.Thread):
-    def __init__(self, thread_id):
+    def __init__(self, thread_id, domain):
         threading.Thread.__init__(self)
         self.thread_id = thread_id
+        self.domain = domain
         self.user_agent = "fri-wier-course-group"
         self.driver = self._init_webdriver()
 
@@ -35,7 +37,7 @@ class Crawler(threading.Thread):
         options.add_argument('--disable-browser-side-navigation')
         options.headless = True
         options.add_argument('--no-sandbox')
-        driver = webdriver.Chrome(chrome_options=options)
+        driver = webdriver.Chrome(chrome_options=options, executable_path=r'D:\ozbej\Downloads\chromedriver.exe')
         driver.set_page_load_timeout(20)
         driver.implicitly_wait(3)
 
@@ -101,9 +103,20 @@ class Crawler(threading.Thread):
 
 
     def crawl_page(self, page_id, response):
-        time.sleep(5)
+        
+        print("[DEBUG] RESPONSE URL:",response.url, " DOMAIN:", urlparse(response.url).netloc)
+        result = get_last_inserted(urlparse(response.url).netloc)
+        if result is not None:
+            insertion_time = result[2]
+            time_diff = (datetime.datetime.now() - insertion_time).total_seconds()
+            if time_diff < 5:
+                print("WAITING for", 5 - time_diff)
+                time.sleep(5)
 
-        self.driver.get(response.url)
+        try:
+            self.driver.get(response.url)
+        except Exception as err:
+            print(err)
 
         html_content = self.driver.page_source
         is_html = 'text/html' in response.headers['content-type']
@@ -199,11 +212,11 @@ class Crawler(threading.Thread):
 
 
     def run(self):
-        next_page = get_next_seed()
+        next_page = get_next_seed(self.domain)
 
         if next_page is None:
             time.sleep(10)
-            next_page = get_next_seed()
+            next_page = get_next_seed(self.domain)
 
 
         while next_page is not None:
@@ -224,10 +237,10 @@ class Crawler(threading.Thread):
                 print ("OOps: Something Else",err)
 
 
-            next_page = get_next_seed()
+            next_page = get_next_seed(self.domain)
 
             if next_page is None:
                 time.sleep(5)
-                next_page = get_next_seed()
+                next_page = get_next_seed(self.domain)
             
         print(f"Crawler {self.thread_id} finished crawling")

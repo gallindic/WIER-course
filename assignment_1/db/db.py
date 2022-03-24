@@ -1,6 +1,7 @@
 import threading
 import configparser
 from datetime import datetime
+from string import Template
 
 import psycopg2
 from psycopg2 import pool, DatabaseError
@@ -100,6 +101,22 @@ def get_page_id_by_hash(hash):
         ps_connection.rollback()
         thread_pool.putconn(ps_connection)
         print(error)
+
+
+def get_last_inserted(domain):
+    try:
+        conn = thread_pool.getconn()
+        cur = conn.cursor()
+        sql = Template("""SELECT id, url, accessed_time FROM crawldb.page WHERE page_type_code = 'HTML' and url LIKE '%%$domain%%' ORDER BY accessed_time DESC LIMIT 1""")
+        cur.execute(sql.substitute(domain=domain))
+        result = cur.fetchone()
+        cur.close()
+    except Exception as e:
+        print("Query failed:", e)
+        result = None
+    finally:
+        thread_pool.putconn(conn)
+        return result
 
 
 def getRobots(siteId):
@@ -231,7 +248,7 @@ def insert_image(seedID, imageName, imageContentType, imageBytes):
         thread_pool.putconn(ps_connection)
 
 
-def get_next_seed():
+def get_next_seed(domain):
     """
     Get next seed from frontier in DB
     """
@@ -239,10 +256,11 @@ def get_next_seed():
         conn = thread_pool.getconn()
         lock.acquire()
         cur = conn.cursor()
-        sql = """update crawldb.page set page_type_code=%s
-                 where id=(select id from crawldb.page where page_type_code=%s ORDER BY id LIMIT 1)
-                 returning id, url"""
-        cur.execute(sql, (None, 'FRONTIER'))
+        sql = Template("""update crawldb.page set page_type_code=%s
+                 where id=(select id from crawldb.page where page_type_code=%s and url LIKE '%%$domain%%'
+                 ORDER BY id LIMIT 1)
+                 returning id, url""")
+        cur.execute(sql.substitute(domain=domain), (None, 'FRONTIER'))
         conn.commit()
         page = cur.fetchone()
         lock.release()

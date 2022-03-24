@@ -27,7 +27,7 @@ def main(threads):
     crawler_threads = []
 
     for i in range(threads):
-        crawler = Crawler(i)
+        crawler = Crawler(i, SEEDS[i])
         
         crawler.start()
         crawler_threads.append(crawler)
