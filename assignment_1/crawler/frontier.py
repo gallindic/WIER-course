@@ -2,10 +2,11 @@ import time
 from os import dup
 from urllib.parse import urlparse
 import urllib.robotparser
+from url_normalize import url_normalize
 import requests
 import re
 from user_agents import parse
-from assignment_1.db.db import get_site_id, insert_site, insert_page, get_page_by_canon_url, insert_link, \
+from db.db import get_site_id, insert_site, insert_page, get_page_by_canon_url, insert_link, \
     get_duplicate_page_id, get_page_by_url, page_link_exists, getRobots
 
 DOMAINS = ['www.gov.si', 'www.evem.gov.si', 'www.e-uprava.gov.si', 'www.e-prostor.gov.si']
@@ -67,18 +68,18 @@ def process_frontier(seed, domain, current_page_id):
 
     url_parsed = urlparse(seed)
     seedCanonicalization = url_parsed.netloc + url_parsed.path
-    seedCanonicalization = seedCanonicalization + '?' + url_parsed.query if url_parsed.query != "" else seedCanonicalization
-    seedCanonicalization = seedCanonicalization[:-1] if seedCanonicalization.endswith('/') else seedCanonicalization
 
     if url_parsed.scheme and url_parsed.scheme not in seedCanonicalization:
         seedCanonicalization = url_parsed.scheme + '://' + seedCanonicalization
-    elif 'http' not in seedCanonicalization:
-        seedCanonicalization = 'http://' + seedCanonicalization
+
+    seedCanonicalization = url_normalize(seedCanonicalization)
+    seedCanonicalization = seedCanonicalization.replace("http://", "https://")
 
     duplicate_page_id = get_page_by_url(seedCanonicalization)
 
     if duplicate_page_id is not None:
-        if not page_link_exists(current_page_id, duplicate_page_id[0]):
+        link_exists = page_link_exists(current_page_id, duplicate_page_id[0])
+        if not link_exists:
             insert_link(current_page_id, duplicate_page_id[0])
 
         return
@@ -86,5 +87,12 @@ def process_frontier(seed, domain, current_page_id):
     site_id = get_site_id(domain)
     next_page_id = insert_page(site_id, 'FRONTIER', seedCanonicalization, html_content=None)
 
-    if not page_link_exists(current_page_id, next_page_id[0]):
-        insert_link(current_page_id, next_page_id[0])
+    if next_page_id:
+        try:
+            link_exists = page_link_exists(current_page_id, next_page_id[0]) 
+
+            if not link_exists:
+                insert_link(current_page_id, next_page_id[0])
+        except Exception as err:
+            print(err)
+            exit(-1)

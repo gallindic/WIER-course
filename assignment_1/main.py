@@ -1,5 +1,5 @@
-from assignment_1.crawler.crawler import Crawler
-from assignment_1.crawler.frontier import init_frontier
+from crawler.crawler import Crawler
+from crawler.frontier import init_frontier
 from argparse import ArgumentParser
 
 SEEDS = ['https://www.gov.si/', 'https://www.evem.gov.si/', 'https://www.e-uprava.gov.si/', 'https://www.e-prostor.gov.si/']

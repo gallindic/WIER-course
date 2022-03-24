@@ -12,7 +12,7 @@ from PIL import Image
 from urllib.parse import urlparse
 from bs4 import BeautifulSoup
 from .frontier import process_frontier
-from assignment_1.db.db import get_next_seed, update_frontier_entry, get_page_id_by_hash, insert_link,\
+from db.db import get_next_seed, update_frontier_entry, get_page_id_by_hash, insert_link,\
     insert_image, insert_binary
 import time
 
@@ -41,6 +41,7 @@ class Crawler(threading.Thread):
 
         return driver
 
+
     def process_link(self, link, url, page_id):
         url_scheme = urlparse(url)
 
@@ -51,6 +52,7 @@ class Crawler(threading.Thread):
                 link = url_scheme.scheme + '://' + url_scheme.netloc + link
 
         process_frontier(link, urlparse(link).netloc, page_id)
+
 
     def parse_html(self, url, html_content, page_id):
         soup = BeautifulSoup(html_content, 'html.parser')
@@ -71,56 +73,43 @@ class Crawler(threading.Thread):
             new_link = str(link.get('href'))
             self.process_link(new_link, url, page_id)
 
+
     def __del__(self):
         self.driver.quit()
 
+
     def parse_onclick(self, page_id):
         for onclick in self.driver.find_elements_by_xpath('//*[@onclick]'):
-            onclick.click()
-            window_handles = self.driver.window_handles
+            try:
+                onclick.click()
+                window_handles = self.driver.window_handles
 
-            if len(window_handles) > 1:
-                self.driver.switch_to.window(window_handles[1])
+                if len(window_handles) > 1:
+                    self.driver.switch_to.window(window_handles[1])
 
-            process_frontier(self.driver.current_url, urlparse(self.driver.current_url).netloc, page_id, onclick=True)
+                process_frontier(self.driver.current_url, urlparse(self.driver.current_url).netloc, page_id)
 
-            if len(window_handles) == 1:
-                self.driver.back()
-            else:
-                for window in window_handles[1:]:
-                    self.driver.switch_to.window(window)
-                    self.driver.close()
-                self.driver.switch_to.window(window_handles[0])
+                if len(window_handles) == 1:
+                    self.driver.back()
+                else:
+                    for window in window_handles[1:]:
+                        self.driver.switch_to.window(window)
+                        self.driver.close()
+                    self.driver.switch_to.window(window_handles[0])
+            except Exception as err:
+                print(err)
+
 
     def crawl_page(self, page_id, response):
-        # Wait 5 seconds between crawling
-        # time.sleep(5)
-        # print("Waiting 5 seconds")
+        time.sleep(5)
 
         self.driver.get(response.url)
 
         html_content = self.driver.page_source
-        # is_html = 'html' in html_content
-        # page_type_code = 'HTML' if is_html else 'BINARY'
-
-        data = {}
-
-        print(response.url)
-
-        print(response.headers['content-type'])
-
-        if 'text/html' in response.headers['content-type']:
-            data = response.text
-            page_type_code = 'HTML'
-            is_html = True
-        else:
-            data = response.content
-            page_type_code = 'BINARY'
-            is_html = False
-
-        print(page_type_code)
+        is_html = 'text/html' in response.headers['content-type']
 
         if is_html:
+            page_type_code = 'HTML'
             html_hash = hashlib.md5(html_content.encode()).hexdigest()
 
             self.parse_onclick(page_id)
@@ -136,16 +125,17 @@ class Crawler(threading.Thread):
                                   hash=html_hash)
             self.parse_html(response.url, html_content, page_id)
         else:
-            # save binaries
-
+            page_type_code = 'BINARY'
             urlData = response.url
 
             for suffix in binaryFiles:
                 if suffix in urlData:
                     try:
-                        if saveBinaries == 1:
-                            urlData = None
                         insert_binary(page_id, suffix, response)
+
+                        if saveBinaries == 1:
+                            break
+                        
 
                         if saveBinaries == 0:
                             if not os.path.exists(str(page_id)):
@@ -153,11 +143,9 @@ class Crawler(threading.Thread):
                             wget.download(response.url, out=str(str(page_id) + '\\'))
                     except Exception as error:
                         print(error)
-
-            pass
+            
 
     def process_image(self, url, page_id):
-        print('processing image')
         try:
             urlParts = urllib.parse.urlparse(url)
             name = urlParts[2].rpartition('/')[2]
@@ -209,18 +197,37 @@ class Crawler(threading.Thread):
         except (Exception, IOError) as error:
             print(error)
 
+
     def run(self):
         next_page = get_next_seed()
+
+        if next_page is None:
+            time.sleep(10)
+            next_page = get_next_seed()
+
 
         while next_page is not None:
             page_id, url = next_page
 
-            url = url.replace('www.', '')
-            response = requests.get(url)
+            try:
+                url = url.replace('www.', '')
+                response = requests.get(url)
 
-            self.crawl_page(page_id, response)
+                self.crawl_page(page_id, response)
+            except requests.exceptions.HTTPError as errh:
+                print ("Http Error:",errh)
+            except requests.exceptions.ConnectionError as errc:
+                print ("Error Connecting:",errc)
+            except requests.exceptions.Timeout as errt:
+                print ("Timeout Error:",errt)
+            except requests.exceptions.RequestException as err:
+                print ("OOps: Something Else",err)
+
 
             next_page = get_next_seed()
 
+            if next_page is None:
+                time.sleep(5)
+                next_page = get_next_seed()
+            
         print(f"Crawler {self.thread_id} finished crawling")
-        self.driver.quit()
