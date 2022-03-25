@@ -12,7 +12,7 @@ from PIL import Image
 from urllib.parse import urlparse
 from bs4 import BeautifulSoup
 from .frontier import process_frontier
-from assignment_1.db.db import get_next_seed, update_frontier_entry, get_page_id_by_hash, insert_link,\
+from db.db import get_next_seed, update_frontier_entry, get_page_id_by_hash, insert_link,\
     insert_image, insert_binary, get_last_inserted
 import time
 import datetime
@@ -140,6 +140,8 @@ class Crawler(threading.Thread):
         else:
             page_type_code = 'BINARY'
             urlData = response.url
+            
+            update_frontier_entry(page_id, response.url, None, page_type_code, response.status_code)
 
             for suffix in binaryFiles:
                 if suffix in urlData:

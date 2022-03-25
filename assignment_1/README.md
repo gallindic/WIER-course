@@ -15,3 +15,11 @@
 ### Setting DB connection
 1. Open `assignment_1/db/db.ini`
 2. Set host to match postgres host name/address (localhost, 172.20...)
+
+### Installing dependencies
+1. Run `pip install -r requirements.txt``
+
+### Running crawler
+1. `cd`into wier_course/assignment_1
+2. Initialize frontier with `python main.py --initFrontier=1``
+3. Run `python main.py --threads=4`

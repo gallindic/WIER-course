@@ -6,7 +6,7 @@ from url_normalize import url_normalize
 import requests
 import re
 from user_agents import parse
-from assignment_1.db.db import get_site_id, insert_site, insert_page, get_page_by_canon_url, insert_link, \
+from db.db import get_site_id, insert_site, insert_page, get_page_by_canon_url, insert_link, \
     get_duplicate_page_id, get_page_by_url, page_link_exists, getRobots
 
 DOMAINS = ['www.gov.si', 'www.evem.gov.si', 'www.e-uprava.gov.si', 'www.e-prostor.gov.si']
