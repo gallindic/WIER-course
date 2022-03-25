@@ -3,6 +3,7 @@ from crawler.frontier import init_frontier
 from argparse import ArgumentParser
 
 SEEDS = ['https://www.gov.si/', 'https://www.evem.gov.si/', 'https://www.e-uprava.gov.si/', 'https://www.e-prostor.gov.si/']
+Seed_domains = ['https://www.gov.si', 'evem.gov.si', 'e-uprava.gov.si', 'e-prostor.gov.si']
 
 def args():
     parser = ArgumentParser()
@@ -27,7 +28,7 @@ def main(threads):
     crawler_threads = []
 
     for i in range(threads):
-        crawler = Crawler(i, SEEDS[i])
+        crawler = Crawler(i, Seed_domains[i])
         
         crawler.start()
         crawler_threads.append(crawler)

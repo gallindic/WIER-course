@@ -49,7 +49,7 @@ def init_frontier(seed):
 
 
 def process_frontier(seed, domain, current_page_id):
-    if domain not in DOMAINS:
+    if "gov.si" not in domain:
         return
 
     robots_ct = getRobots(get_site_id(domain))
