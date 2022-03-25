@@ -12,7 +12,7 @@ from PIL import Image
 from urllib.parse import urlparse
 from bs4 import BeautifulSoup
 from .frontier import process_frontier
-from db.db import get_next_seed, update_frontier_entry, get_page_id_by_hash, insert_link,\
+from assignment_1.db.db import get_next_seed, update_frontier_entry, get_page_id_by_hash, insert_link,\
     insert_image, insert_binary, get_last_inserted
 import time
 import datetime
@@ -37,7 +37,7 @@ class Crawler(threading.Thread):
         options.add_argument('--disable-browser-side-navigation')
         options.headless = True
         options.add_argument('--no-sandbox')
-        driver = webdriver.Chrome(chrome_options=options, executable_path=r'D:\ozbej\Downloads\chromedriver.exe')
+        driver = webdriver.Chrome(chrome_options=options)
         driver.set_page_load_timeout(20)
         driver.implicitly_wait(3)
 
@@ -240,7 +240,7 @@ class Crawler(threading.Thread):
             next_page = get_next_seed(self.domain)
 
             if next_page is None:
-                time.sleep(5)
+                time.sleep(2)
                 next_page = get_next_seed(self.domain)
             
         print(f"Crawler {self.thread_id} finished crawling")

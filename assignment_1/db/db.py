@@ -220,8 +220,8 @@ def insert_binary(seedID, dataType, urlData):
         cur.execute(sql, (dataType.split('.')[1].upper(),))
         extension = cur.fetchone()
         if extension is not None:
-            sql = """INSERT INTO crawldb.page_data(page_id, data_type_code, data)
-                                VALUES (%s, %s, %s);"""
+            sql = """INSERT INTO crawldb.page_data(page_id, data_type_code)
+                                VALUES (%s, %s);"""
             cur.execute(sql, (seedID, extension, psycopg2.Binary(urlData.content)))
             ps_connection.commit()
         thread_pool.putconn(ps_connection)
@@ -236,9 +236,9 @@ def insert_image(seedID, imageName, imageContentType, imageBytes):
     try:
         ps_connection = thread_pool.getconn()
         cur = ps_connection.cursor()
-        sql = """INSERT INTO crawldb.image(page_id, filename, content_type, data, accessed_time)
-                             VALUES (%s,%s, %s, %s, %s);"""
-        cur.execute(sql, (seedID, imageName, imageContentType, imageBytes.getvalue(), datetime.now()))
+        sql = """INSERT INTO crawldb.image(page_id, filename, content_type, accessed_time)
+                             VALUES (%s,%s, %s, %s);"""
+        cur.execute(sql, (seedID, imageName, imageContentType, datetime.now()))
         ps_connection.commit()
         thread_pool.putconn(ps_connection)
 
@@ -260,7 +260,8 @@ def get_next_seed(domain):
                  where id=(select id from crawldb.page where page_type_code=%s and url LIKE '%%$domain%%'
                  ORDER BY id LIMIT 1)
                  returning id, url""")
-        cur.execute(sql.substitute(domain=domain), (None, 'FRONTIER'))
+        sql = sql.substitute(domain=domain)
+        cur.execute(sql, (None, 'FRONTIER'))
         conn.commit()
         page = cur.fetchone()
         lock.release()
