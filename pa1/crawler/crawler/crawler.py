@@ -37,7 +37,7 @@ class Crawler(threading.Thread):
         options.add_argument('--disable-browser-side-navigation')
         options.headless = True
         options.add_argument('--no-sandbox')
-        driver = webdriver.Chrome(chrome_options=options, executable_path=r'D:\ozbej\Downloads\chromedriver.exe')
+        driver = webdriver.Chrome(chrome_options=options)
         driver.set_page_load_timeout(20)
         driver.implicitly_wait(3)
 
@@ -104,13 +104,11 @@ class Crawler(threading.Thread):
 
     def crawl_page(self, page_id, response):
         
-        print("[DEBUG] RESPONSE URL:",response.url, " DOMAIN:", urlparse(response.url).netloc)
         result = get_last_inserted(urlparse(response.url).netloc)
         if result is not None:
             insertion_time = result[2]
             time_diff = (datetime.datetime.now() - insertion_time).total_seconds()
             if time_diff < 5:
-                print("WAITING for", 5 - time_diff)
                 time.sleep(5)
 
         try:
