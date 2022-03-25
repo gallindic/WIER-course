@@ -37,7 +37,7 @@ class Crawler(threading.Thread):
         options.add_argument('--disable-browser-side-navigation')
         options.headless = True
         options.add_argument('--no-sandbox')
-        driver = webdriver.Chrome(chrome_options=options)
+        driver = webdriver.Chrome(chrome_options=options, executable_path=r'D:\ozbej\Downloads\chromedriver.exe')
         driver.set_page_load_timeout(20)
         driver.implicitly_wait(3)
 
