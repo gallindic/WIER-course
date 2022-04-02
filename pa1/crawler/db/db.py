@@ -248,7 +248,7 @@ def insert_image(seedID, imageName, imageContentType, imageBytes):
         thread_pool.putconn(ps_connection)
 
 
-def get_next_seed(domain):
+def get_next_seed():
     """
     Get next seed from frontier in DB
     """
@@ -256,11 +256,11 @@ def get_next_seed(domain):
         conn = thread_pool.getconn()
         lock.acquire()
         cur = conn.cursor()
-        sql = Template("""update crawldb.page set page_type_code=%s
-                 where id=(select id from crawldb.page where page_type_code=%s and url LIKE '%%$domain%%'
+        sql = """update crawldb.page set page_type_code=%s
+                 where id=(SELECT p.id FROM crawldb.page p INNER JOIN crawldb.site s ON p.site_id = s.id
+                    WHERE page_type_code=%s and s.domain NOT IN (SELECT DISTINCT domain FROM crawldb.scheduler)
                  ORDER BY id LIMIT 1)
-                 returning id, url""")
-        sql = sql.substitute(domain=domain)
+                 returning id, url"""
         cur.execute(sql, (None, 'FRONTIER'))
         conn.commit()
         page = cur.fetchone()
@@ -273,3 +273,81 @@ def get_next_seed(domain):
         lock.release()
         thread_pool.putconn(conn)
         print(error)
+
+
+def insert_scheduler(domain=None, ip=None, delete_at=None):
+    try:
+        ps_connection = thread_pool.getconn()
+        cur = ps_connection.cursor()
+        sql = """INSERT INTO crawldb.scheduler(domain, ip, delete_at)
+                             VALUES (%s,%s, %s);"""
+        cur.execute(sql, (domain, ip, delete_at))
+        ps_connection.commit()
+        thread_pool.putconn(ps_connection)
+
+    except (Exception, psycopg2.DatabaseError, pool.PoolError) as error:
+        print(error)
+        ps_connection.rollback()
+        thread_pool.putconn(ps_connection)
+
+
+def insert_site(domain, robots_content, sitemap_content):
+    try:
+        conn = thread_pool.getconn()
+        cur = conn.cursor()
+        sql = "INSERT INTO crawldb.site (domain, robots_content, sitemap_content) VALUES (%s, %s, %s)"
+        cur.execute(sql, (domain, robots_content, sitemap_content))
+        conn.commit()
+        print("Site %s inserted successfully" % domain)
+    except Exception as e:
+        print("Insertion failed:", e)
+    finally:
+        thread_pool.putconn(conn)
+
+
+def delete_from_scheduler():
+    try:
+        conn = thread_pool.getconn()
+        lock.acquire()
+        now = datetime.now()
+        cur = conn.cursor()
+        sql = "DELETE FROM crawldb.scheduler WHERE %s > delete_at"
+        cur.execute(sql, (now,))
+        conn.commit()
+        lock.release()
+    except Exception as e:
+        print("Deletion failed:", e)
+    finally:
+        thread_pool.putconn(conn)
+
+
+def get_frontier_len():
+    try:
+        conn = thread_pool.getconn()
+        cur = conn.cursor()
+        sql = "SELECT COUNT(id) FROM crawldb.page WHERE page_type_code='FRONTIER'"
+        cur.execute(sql)
+        count = cur.fetchone()[0]
+        cur.close()
+    except Exception as e:
+        print("Query failed:", e)
+        count = None
+    finally:
+        thread_pool.putconn(conn)
+        return count
+
+
+def get_pages_len():
+    try:
+        conn = thread_pool.getconn()
+        cur = conn.cursor()
+        sql = "SELECT COUNT(id) FROM crawldb.page"
+        cur.execute(sql)
+        count = cur.fetchone()[0]
+        cur.close()
+    except Exception as e:
+        print("Query failed:", e)
+        count = None
+    finally:
+        thread_pool.putconn(conn)
+        return count

@@ -1,4 +1,5 @@
 from crawler.crawler import Crawler
+from crawler.manager import Manager
 from crawler.frontier import init_frontier
 from argparse import ArgumentParser
 
@@ -27,12 +28,16 @@ def init_seeds():
 def main(threads):
     crawler_threads = []
 
-    for i in range(threads):
-        crawler = Crawler(i, Seed_domains[i])
+    manager = Manager(0)
+    manager.start()
+
+    for i in range(1, threads+1):
+        crawler = Crawler(i)
         
         crawler.start()
         crawler_threads.append(crawler)
 
+    manager.join()
     for crawler in crawler_threads:
         crawler.join()
 

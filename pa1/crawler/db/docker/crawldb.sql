@@ -5,6 +5,15 @@ CREATE TABLE crawldb.data_type (
 	CONSTRAINT pk_data_type_code PRIMARY KEY ( code )
  );
 
+
+CREATE TABLE crawldb.scheduler (
+	id                 serial  NOT NULL,
+	domain				varchar(500),
+	ip					varchar(100),
+	delete_at			timestamp,
+	CONSTRAINT pk_id_scheduler PRIMARY KEY ( id )
+ );
+
 CREATE TABLE crawldb.page_type ( 
 	code                 varchar(20)  NOT NULL,	
 	CONSTRAINT pk_page_type_code PRIMARY KEY ( code )

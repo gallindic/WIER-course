@@ -11,9 +11,9 @@ from selenium import webdriver
 from PIL import Image
 from urllib.parse import urlparse
 from bs4 import BeautifulSoup
-from .frontier import process_frontier
-from db.db import get_next_seed, update_frontier_entry, get_page_id_by_hash, insert_link,\
-    insert_image, insert_binary, get_last_inserted
+from .frontier import process_frontier, process_robots, process_sitemap
+from db.db import get_next_seed, get_site_id, insert_scheduler, insert_site, update_frontier_entry, get_page_id_by_hash, insert_link,\
+    insert_image, insert_binary
 import time
 import datetime
 
@@ -24,10 +24,9 @@ cur = os.getcwd()
 
 
 class Crawler(threading.Thread):
-    def __init__(self, thread_id, domain):
+    def __init__(self, thread_id):
         threading.Thread.__init__(self)
         self.thread_id = thread_id
-        self.domain = domain
         self.user_agent = "fri-wier-course-group"
         self.driver = self._init_webdriver()
 
@@ -103,18 +102,20 @@ class Crawler(threading.Thread):
 
 
     def crawl_page(self, page_id, response):
-        
-        result = get_last_inserted(urlparse(response.url).netloc)
-        if result is not None:
-            insertion_time = result[2]
-            time_diff = (datetime.datetime.now() - insertion_time).total_seconds()
-            if time_diff < 5:
-                time.sleep(5)
-
         try:
+            domain = urlparse(response.url).netloc
+            if "gov.si" not in domain: return
+
+            # Insert new domain into Site
+            if get_site_id(domain) is None:
+                robots = process_robots(response.url + "robots.txt")
+                sitemap = process_sitemap(robots) if robots is not None else None
+                insert_site(domain, robots, sitemap)
+
             self.driver.get(response.url)
         except Exception as err:
             print(err)
+            return
 
         html_content = self.driver.page_source
         is_html = 'text/html' in response.headers['content-type']
@@ -212,20 +213,23 @@ class Crawler(threading.Thread):
 
 
     def run(self):
-        next_page = get_next_seed(self.domain)
+        next_page = get_next_seed()
 
         if next_page is None:
             time.sleep(10)
-            next_page = get_next_seed(self.domain)
+            next_page = get_next_seed()
 
 
         while next_page is not None:
             page_id, url = next_page
 
             try:
+                domain = urlparse(url).netloc
+                insert_scheduler(domain, None, datetime.datetime.now() + datetime.timedelta(seconds=5))
+               
                 url = url.replace('www.', '')
                 response = requests.get(url)
-
+                
                 self.crawl_page(page_id, response)
             except requests.exceptions.HTTPError as errh:
                 print ("Http Error:",errh)
@@ -237,10 +241,10 @@ class Crawler(threading.Thread):
                 print ("OOps: Something Else",err)
 
 
-            next_page = get_next_seed(self.domain)
+            next_page = get_next_seed()
 
             if next_page is None:
                 time.sleep(2)
-                next_page = get_next_seed(self.domain)
+                next_page = get_next_seed()
             
         print(f"Crawler {self.thread_id} finished crawling")
