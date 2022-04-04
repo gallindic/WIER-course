@@ -36,6 +36,8 @@ def process_sitemap(text):
 def init_frontier(seed):
     print("Processing", seed)
 
+    seed = seed.replace('www.', '')
+
     url_parsed = urlparse(seed)
     domain = url_parsed.netloc
 

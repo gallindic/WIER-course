@@ -104,11 +104,13 @@ class Crawler(threading.Thread):
     def crawl_page(self, page_id, response):
         try:
             domain = urlparse(response.url).netloc
-            if "gov.si" not in domain: return
+            domain = domain.replace('www.', '')
+            if "gov.si" not in domain: 
+                return
 
             # Insert new domain into Site
             if get_site_id(domain) is None:
-                robots = process_robots(response.url + "robots.txt")
+                robots = process_robots(domain + "/robots.txt")
                 sitemap = process_sitemap(robots) if robots is not None else None
                 insert_site(domain, robots, sitemap)
 
@@ -122,13 +124,10 @@ class Crawler(threading.Thread):
 
         if is_html:
             page_type_code = 'HTML'
-            html_hash = hashlib.md5(html_content.encode()).hexdigest()
-
+            html_hash = hashlib.sha256(html_content.encode('utf-8')).hexdigest()
             self.parse_onclick(page_id)
-
             duplicate_page_id = get_page_id_by_hash(html_hash)
             if duplicate_page_id:
-                print("duplicate")
                 insert_link(page_id, duplicate_page_id)
                 page_type_code = 'DUPLICATE'
                 html_content = None
@@ -213,14 +212,13 @@ class Crawler(threading.Thread):
 
 
     def run(self):
-        next_page = get_next_seed()
-
-        if next_page is None:
-            time.sleep(10)
+        while True:
             next_page = get_next_seed()
 
-
-        while next_page is not None:
+            if next_page is None:
+                time.sleep(5)
+                continue
+            
             page_id, url = next_page
 
             try:
@@ -239,12 +237,3 @@ class Crawler(threading.Thread):
                 print ("Timeout Error:",errt)
             except requests.exceptions.RequestException as err:
                 print ("OOps: Something Else",err)
-
-
-            next_page = get_next_seed()
-
-            if next_page is None:
-                time.sleep(2)
-                next_page = get_next_seed()
-            
-        print(f"Crawler {self.thread_id} finished crawling")
