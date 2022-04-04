@@ -10,7 +10,7 @@ config = configparser.ConfigParser()
 config.read('db/db.ini')
 
 try:
-    thread_pool = pool.ThreadedConnectionPool(1, 32,
+    thread_pool = pool.ThreadedConnectionPool(1, 64,
                                               database=config['postgresDB']['db'],
                                               user=config['postgresDB']['user'],
                                               password=config['postgresDB']['pass'],
@@ -201,7 +201,7 @@ def update_frontier_entry(page_id, url, html_content, page_type_code, http_statu
         lock.acquire()
         cur = conn.cursor()
         sql = "UPDATE crawldb.page SET page_type_code=%s, html_content=%s, http_status_code=%s, accessed_time=%s, hash=%s where id=%s"
-        cur.execute(sql, (page_type_code, html_content, http_status_code, datetime.now(), hash, page_id))
+        cur.execute(sql, (page_type_code, html_content, http_status_code, datetime.now(), str(hash), page_id))
         conn.commit()
         lock.release()
         print("Page %s updated successfully" % url)
@@ -220,9 +220,9 @@ def insert_binary(seedID, dataType, urlData):
         cur.execute(sql, (dataType.split('.')[1].upper(),))
         extension = cur.fetchone()
         if extension is not None:
-            sql = """INSERT INTO crawldb.page_data(page_id, data_type_code)
-                                VALUES (%s, %s);"""
-            cur.execute(sql, (seedID, extension, psycopg2.Binary(urlData.content)))
+            sql = """INSERT INTO crawldb.page_data(page_id, data_type_code, data)
+                                VALUES (%s, %s, %s);"""
+            cur.execute(sql, (seedID, extension, None))
             ps_connection.commit()
         thread_pool.putconn(ps_connection)
 

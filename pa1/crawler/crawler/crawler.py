@@ -17,7 +17,7 @@ from db.db import get_next_seed, get_site_id, insert_scheduler, insert_site, upd
 import time
 import datetime
 
-binaryFiles = ['.pdf', '.doc', '.ppt', '.docx', '.pptx']
+binaryFiles = ['.pdf', '.doc', '.ppt', '.docx', '.pptx', '.zip', '.xls', '.xlsx', '.csv', '.xsd', '.mp4', '.mp3']
 saveBinaries = 1
 saveImages = 1
 cur = os.getcwd()
@@ -98,22 +98,12 @@ class Crawler(threading.Thread):
                         self.driver.close()
                     self.driver.switch_to.window(window_handles[0])
             except Exception as err:
-                print(err)
+                #print(err)
+                pass
 
 
     def crawl_page(self, page_id, response):
         try:
-            domain = urlparse(response.url).netloc
-            domain = domain.replace('www.', '')
-            if "gov.si" not in domain: 
-                return
-
-            # Insert new domain into Site
-            if get_site_id(domain) is None:
-                robots = process_robots(domain + "/robots.txt")
-                sitemap = process_sitemap(robots) if robots is not None else None
-                insert_site(domain, robots, sitemap)
-
             self.driver.get(response.url)
         except Exception as err:
             print(err)
@@ -125,7 +115,9 @@ class Crawler(threading.Thread):
         if is_html:
             page_type_code = 'HTML'
             html_hash = hashlib.sha256(html_content.encode('utf-8')).hexdigest()
+            
             self.parse_onclick(page_id)
+            
             duplicate_page_id = get_page_id_by_hash(html_hash)
             if duplicate_page_id:
                 insert_link(page_id, duplicate_page_id)
@@ -149,7 +141,6 @@ class Crawler(threading.Thread):
                         if saveBinaries == 1:
                             break
                         
-
                         if saveBinaries == 0:
                             if not os.path.exists(str(page_id)):
                                 os.mkdir(str(page_id))
@@ -218,7 +209,7 @@ class Crawler(threading.Thread):
             if next_page is None:
                 time.sleep(5)
                 continue
-            
+
             page_id, url = next_page
 
             try:

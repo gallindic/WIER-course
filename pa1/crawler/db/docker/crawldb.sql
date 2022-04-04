@@ -97,7 +97,14 @@ INSERT INTO crawldb.data_type VALUES
 	('DOC'),
 	('DOCX'),
 	('PPT'),
-	('PPTX');
+	('PPTX'),
+	('ZIP'),
+	('XLS'),
+	('XLSX'),
+	('MP4'),
+	('CSV'),
+	('XSD'),
+	('MP3');
 
 INSERT INTO crawldb.page_type VALUES 
 	('HTML'),

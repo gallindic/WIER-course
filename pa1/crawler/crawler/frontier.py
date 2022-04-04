@@ -1,3 +1,4 @@
+from dataclasses import replace
 import time
 from os import dup
 from urllib.parse import urlparse
@@ -36,23 +37,32 @@ def process_sitemap(text):
 def init_frontier(seed):
     print("Processing", seed)
 
-    seed = seed.replace('www.', '')
-
     url_parsed = urlparse(seed)
     domain = url_parsed.netloc
+
 
     robots = process_robots(seed + "robots.txt")
     sitemap = process_sitemap(robots) if robots is not None else None
 
+    domain = domain.replace('www.', '')
+
     insert_site(domain, robots, sitemap)
     site_id = get_site_id(domain)
 
-    insert_page(site_id, "FRONTIER", seed)
+    insert_page(site_id, "FRONTIER", seed.replace("www.", ""))
 
 
 def process_frontier(seed, domain, current_page_id):
-    if "gov.si" not in domain:
+    if ".gov.si" not in domain:
         return
+
+    domain = domain.replace("www.", "")
+
+    # Insert new domain into Site
+    if get_site_id(domain) is None:
+        robots = process_robots(domain + "/robots.txt")
+        sitemap = process_sitemap(robots) if robots is not None else None
+        insert_site(domain, robots, sitemap)
 
     robots_ct = getRobots(get_site_id(domain))
 
@@ -75,6 +85,7 @@ def process_frontier(seed, domain, current_page_id):
         seedCanonicalization = url_parsed.scheme + '://' + seedCanonicalization
 
     seedCanonicalization = url_normalize(seedCanonicalization)
+    seedCanonicalization = seedCanonicalization.replace("www.", "")
     seedCanonicalization = seedCanonicalization.replace("http://", "https://")
 
     duplicate_page_id = get_page_by_url(seedCanonicalization)
@@ -90,11 +101,7 @@ def process_frontier(seed, domain, current_page_id):
     next_page_id = insert_page(site_id, 'FRONTIER', seedCanonicalization, html_content=None)
 
     if next_page_id:
-        try:
-            link_exists = page_link_exists(current_page_id, next_page_id[0]) 
+        link_exists = page_link_exists(current_page_id, next_page_id[0]) 
 
-            if not link_exists:
-                insert_link(current_page_id, next_page_id[0])
-        except Exception as err:
-            print(err)
-            exit(-1)
+        if not link_exists:
+            insert_link(current_page_id, next_page_id[0])
