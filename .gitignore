@@ -1,1 +1,3 @@
-pa1/db/db.ini
+pa1/crawler/db/db.ini
+pa1/**/__pycache__
+pa2/**/__pycache__

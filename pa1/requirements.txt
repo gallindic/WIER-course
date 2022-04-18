@@ -1,0 +1,7 @@
+bs4
+psycopg2
+selenium
+wget
+user_agents
+url_normalize
+html2text
