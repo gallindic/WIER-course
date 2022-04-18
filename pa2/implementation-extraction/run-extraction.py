@@ -1,5 +1,7 @@
 from argparse import ArgumentParser
 from regex_parser import regex_parse
+import codecs
+from lxml.html.clean import Cleaner
 
 
 SITES = {
@@ -13,6 +15,8 @@ SITES = {
     ]
 }
 
+cleaner = Cleaner()
+
 def cmd_args():
     parser = ArgumentParser()
     
@@ -23,11 +27,11 @@ def cmd_args():
 
 
 def get_html_code(page):
-    htmlObject = open(page, 'rb')
-    return htmlObject.read()
+    page = codecs.open(page, encoding='utf-8', errors='replace').read()
+    return cleaner.clean_html(page)
 
 
-def run_regex(pages, source):
+def run_regex(pages, source):    
     for page in pages:
         regex_parse(get_html_code(page), source)
 
@@ -48,4 +52,3 @@ def run_extraction(args):
 if __name__ == '__main__':
     args = cmd_args()
     run_extraction(args)
-    
