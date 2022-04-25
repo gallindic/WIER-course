@@ -7,6 +7,8 @@ def get_source_method(source):
         return parse_overstock
     elif source == 'rtvslo':
         return parse_rtvslo
+    elif source == 'bolha':
+        pass
     
 
 def parse_overstock(html_code):
@@ -108,10 +110,10 @@ def parse_rtvslo(html_code):
     return (
         json.dumps({
             "Author": author,
-            "Date": date,
+            "PublishedTime": date,
             "Title": title,
             "SubTitle": subtitle,
-            "Abstract": abstract,
+            "Lead": abstract,
             "Content": content
         },
         ensure_ascii=False, indent=4)

@@ -9,6 +9,8 @@ def get_source_method(source):
         return parse_overstock
     elif source == 'rtvslo':
         return parse_rtvslo
+    elif source == 'bolha':
+        return parse_bolha
     
 
 def parse_overstock(html_code):
@@ -78,10 +80,64 @@ def parse_rtvslo(html_code):
     return (
         json.dumps({
             "Author": author,
-            "Date": date,
+            "PublishedTime": date,
             "Title": title,
             "SubTitle": subtitle,
-            "Abstract": abstract,
+            "Lead": abstract,
+            "Content": content
+        },
+        ensure_ascii=False, indent=4)
+    )
+
+
+def parse_bolha(html_code):
+    root_element = fromstring(html_code)
+
+    # Title - Bolha
+    title = root_element.xpath("//h1[@class='entity-title']")[0].text_content()
+
+    # Price - Bolha
+    price = root_element.xpath("//li[@class='price-item price-item--base']/strong")[0].text_content()
+    price = ' '.join(price.split())
+    
+    # Id - Bolha
+    id = root_element.xpath("//b[@class='base-entity-id']")[0].text_content()
+
+    # PublishedTime - Bolha
+    published_time = root_element.xpath("//li[@class='meta-item meta-item--hidden']/time")[0].text_content()
+    
+    # ValidUntil - Bolha
+    valid_until = root_element.xpath("//li[@class='meta-item meta-item--hidden']/span/span[@class='base-entity-display-expires-on']")[0].text_content()
+    
+    # Views - Bolha
+    views = root_element.xpath("//li[@class='meta-item meta-item--hidden']/span/span[@class='base-entity-display-count']")[0].text_content()
+    
+    table_summary = root_element.xpath("//table[@class='table-summary table-summary--alpha']/tbody")[0]
+
+    # Type - Bolha
+    type = table_summary.xpath("./tr[1]/td")[0].text_content()
+
+    # Location - Bolha
+    location = table_summary.xpath("./tr[2]/td")[0].text_content()
+
+    # Status - Bolha
+    status = table_summary.xpath("./tr[3]/td")[0].text_content()
+    
+    # Content - Bolha
+    content = root_element.xpath("//div[@class='passage-standard passage-standard--alpha']/div/p")[0].text_content()
+    content = ' '.join(content.split()) # TODO: how to filter content?
+    
+    return (
+        json.dumps({
+            "Title": title,
+            "Price": price,
+            "Id": id,
+            "PublishedTime": published_time,
+            "ValidUntil": valid_until,
+            "Views": views,
+            "Type": type,
+            "Location": location,
+            "Status": status,
             "Content": content
         },
         ensure_ascii=False, indent=4)

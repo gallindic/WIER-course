@@ -13,6 +13,10 @@ SITES = {
     'rtvslo': [
         '../input-extraction/rtvslo.si/Audi A6 50 TDI quattro_ nemir v premijskem razredu - RTVSLO.si.html',
         '../input-extraction/rtvslo.si/Volvo XC 40 D4 AWD momentum_ suvereno med najboljše v razredu - RTVSLO.si.html'
+    ],
+    'bolha': [
+        '../input-extraction/bolha.com/advertisement01.html',
+        '../input-extraction/bolha.com/advertisement02.html'
     ]
 }
 
