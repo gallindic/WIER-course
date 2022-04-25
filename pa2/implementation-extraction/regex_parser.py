@@ -13,21 +13,21 @@ def parse_overstock(html_code):
     prodId = 0
     prdcts = []
 
-    #Title - Overstock
+    # Title - Overstock
     regex = r"<b>([0-9]+-(.+)(?=\</b>))</b>"
     titles = []
     matches = re.finditer(regex, html_code)
     for match in matches:
         titles.append(match.group(1))
 
-    #LastPrices - Overstock
+    # LastPrices - Overstock
     regex = r"<s>(.*?)</s>"
     listPrices = []
     matches = re.finditer(regex, html_code)
     for match in matches:
         listPrices.append(match.group(1))
 
-    #Prices - Overstock
+    # Prices - Overstock
     regex = r"<b>([$€]\s*[0-9\.,]+)</b>"
     prices = []
     matches = re.finditer(regex, html_code)
@@ -43,14 +43,14 @@ def parse_overstock(html_code):
         final = re.sub(r"<[^>]*>", "", content)
         contents.append(final)
 
-    #Percents - Overstock
+    # Percents - Overstock
     regex = r"\(([0-9]+%\))"
     percents = []
     matches = re.finditer(regex, html_code)
     for match in matches:
         percents.append(match.group(0))
 
-    #Savings - Overstock
+    # Savings - Overstock
     regex = r"([$€]\s*[0-9\.,]+ )"
     savings = []
     matches = re.finditer(regex, html_code)
@@ -73,33 +73,33 @@ def parse_overstock(html_code):
 
 
 def parse_rtvslo(html_code):
-    #Author - RTV
+    # Author - RTV
     regex = r"<div class=\"author-name\">(.*)</div>"
     match = re.compile(regex).search(html_code)
     author = match.group(1)
 
-    #Title
+    # Title - RTV
     regex = r"<h1>(.*)<\/h1>"
     match = re.compile(regex).search(html_code)
     title = match.group(1)
 
-    #Subtitle
+    # Subtitle - RTV
     regex = r"<div class=\"subtitle\">(.*)</div>"
     match = re.compile(regex).search(html_code)
     subtitle = match.group(1)
 
-    #Date
+    # Date - RTV
     regex = r"<div class=\"publish-meta\">(.*?)<br>"
     match = re.search(regex, html_code, re.DOTALL)
     date = match.group(1)
     date = ' '.join(date.split())
 
-    #Lead
+    # Lead - RTV
     regex = r"<p class=\"lead\">(.*)</p>"
     match = re.compile(regex).search(html_code)
     abstract = match.group(1)
 
-    #Content
+    # Content - RTV
     regex = r"<article class=\"article\">(.*?)<\/article>"
     match = re.search(regex, html_code, re.DOTALL)
     first = ' '.join(match.group(1).split())

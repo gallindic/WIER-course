@@ -1,5 +1,6 @@
 from argparse import ArgumentParser
 from regex_parser import regex_parse
+from xpath_parser import xpath_parse
 import codecs
 from lxml.html.clean import Cleaner
 
@@ -36,13 +37,18 @@ def run_regex(pages, source):
         regex_parse(get_html_code(page), source)
 
 
+def run_xpath(pages, source):    
+    for page in pages:
+        xpath_parse(get_html_code(page), source)
+
+
 def run_extraction(args):
     pages = SITES[args.source]
     
     if args.extraction == 'A':
         run_regex(pages, args.source)
     elif args.extraction == 'B':
-        pass
+        run_xpath(pages, args.source)
     elif args.extraction == 'C':
         pass
     else:
