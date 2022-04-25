@@ -1,5 +1,5 @@
 ## How to run
-1. `cd` into implementation-extraction folder
+1. `cd` into "implementation-extraction" folder
 2. run `python run-extraction --extraction=[method] --source=[input soruce]`
 
 Extraction methods:
