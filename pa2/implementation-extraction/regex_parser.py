@@ -1,5 +1,8 @@
 import json
 import re
+from xml import etree
+
+from sympy import public
 
 
 def get_source_method(source):
@@ -8,7 +11,7 @@ def get_source_method(source):
     elif source == 'rtvslo':
         return parse_rtvslo
     elif source == 'bolha':
-        pass
+        return parse_bolha
     
 
 def parse_overstock(html_code):
@@ -104,8 +107,9 @@ def parse_rtvslo(html_code):
     # Content - RTV
     regex = r"<article class=\"article\">(.*?)<\/article>"
     match = re.search(regex, html_code, re.DOTALL)
-    first = ' '.join(match.group(1).split())
-    content = re.sub(r"<[^>]*>", "", first)
+    content = ' '.join(match.group(1).split())
+    content = re.sub(r'<[^>]+>', "", content)
+    content = re.sub(' +', ' ', content).strip()
 
     return (
         json.dumps({
@@ -118,6 +122,93 @@ def parse_rtvslo(html_code):
         },
         ensure_ascii=False, indent=4)
     )
+
+
+def parse_bolha(html_code):
+    # Title - Bolha
+    regex = r"<h1 class=\"entity-title\">(.*)<\/h1>"
+    match = re.compile(regex).search(html_code)
+    title = match.group(1)
+
+    # Price - Bolha
+    regex = r"<strong class=\"price price--hrk\">(.*?)<\/strong>"
+    match = re.search(regex, html_code, re.DOTALL)
+    price = match.group(1)
+    price = ' '.join(match.group(1).split())
+    price = re.sub(r'<[^>]+>', "", price)
+    price = re.sub(' +', ' ', price).strip()
+
+    # Id - Bolha
+    regex = r"<b class=\"base-entity-id\">(.*)<\/b>"
+    match = re.compile(regex).search(html_code)
+    id = match.group(1)
+
+    # PubishedTIme - Bolha
+    regex = r"<time class=\"value\" \s*.*>(.*)<\/time>"
+    match = re.compile(regex).search(html_code)
+    published_time = match.group(1)
+
+    # ValidUntil - Bolha
+    regex = r"<span class=\"base-entity-display-expires-on\">(.*)<\/span>"
+    match = re.compile(regex).search(html_code)
+    valid_until = match.group(1)
+    valid_until = re.sub(' +', ' ', valid_until).strip()
+
+    # Views - Bolha
+    regex = r"<span class=\"base-entity-display-count\">(.*)<\/span>"
+    match = re.compile(regex).search(html_code)
+    views = match.group(1)
+    views = ' '.join(match.group(1).split())
+    views = re.sub(r'<[^>]+>', "", views).split()[0]
+
+    # Table/table body 
+    regex = r"<table class=\"table-summary table-summary--alpha\" cellpadding=\"0\" cellspacing=\"0\">(.*?)<\/table>"
+    match = re.search(regex, html_code, re.DOTALL)
+    table = match.group(1)
+    table = re.sub(' +', ' ', table).strip()
+
+    regex = r"<tbody>(.*?)<\/tbody>"
+    match = re.search(regex, table, re.DOTALL)
+    table_body = match.group(1)
+    table_body = re.sub(' +', ' ', table_body).strip()
+
+    # Type - Bolha
+    regex = r"<td>(.*?)<\/td>"
+    match = re.findall(regex, table_body, re.DOTALL)
+    type = match[0]
+
+    # Location - Bolha
+    location = match[1]
+
+    # Status - Bolha
+    status = match[2]
+
+    # Content - Bolha
+    regex = r"<div id=\"base-entity-description-wrapper\">(.*?)<\/div>"
+    match = re.search(regex, html_code, re.DOTALL)
+    container = match.group(1)
+    container = re.sub(' +', '', container).strip()
+
+    regex = r"<p>(.*?)<\/p>"
+    match = re.search(regex, html_code, re.DOTALL)
+    content = match.group(1)
+    content = re.sub(r'<[^>]+>', "", content)
+    content = re.sub(r'\n', " ", content)
+    content = re.sub(' +', ' ', content).strip()
+
+    return json.dumps({
+        "Title": title,
+        "Price": price,
+        "Id": id,
+        "PublishedTime": published_time,
+        "ValidUntil": valid_until,
+        "Views": views,
+        "Type": type,
+        "Location": location,
+        "Status": status,
+        "Content": content
+
+    }, ensure_ascii=False, indent=4)               
 
 
 def regex_parse(html_code, source):
