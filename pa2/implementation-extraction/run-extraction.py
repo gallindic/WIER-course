@@ -3,6 +3,7 @@ from regex_parser import regex_parse
 from xpath_parser import xpath_parse
 import codecs
 from lxml.html.clean import Cleaner
+from roadrunner import runner
 
 
 SITES = {
@@ -46,6 +47,10 @@ def run_xpath(pages, source):
         xpath_parse(get_html_code(page), source)
 
 
+def run_runner(pages, source):
+    runner(pages[0], pages[1], source)
+
+
 def run_extraction(args):
     pages = SITES[args.source]
     
@@ -54,7 +59,7 @@ def run_extraction(args):
     elif args.extraction == 'B':
         run_xpath(pages, args.source)
     elif args.extraction == 'C':
-        pass
+        run_runner(pages, args.source)
     else:
         print('Extraction method not found!')
     
