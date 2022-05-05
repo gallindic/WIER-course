@@ -3,7 +3,7 @@ import bs4
 from lxml.html.clean import Cleaner
 
 
-def runner(page1, page2, source):
+def runner(page1, page2):
     # print(page1, page2, source)
     out = ""
 

@@ -48,7 +48,7 @@ def run_xpath(pages, source):
 
 
 def run_runner(pages, source):
-    runner(pages[0], pages[1], source)
+    runner(pages[0], pages[1])
 
 
 def run_extraction(args):
