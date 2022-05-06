@@ -1,6 +1,6 @@
 ## How to run
 1. `cd` into "implementation-extraction" folder
-2. run `python run-extraction --extraction=[method] --source=[input soruce]`
+2. run `python run-extraction --extraction=[method] --source=[input source]`
 
 Extraction methods:
 - A: regex parser
