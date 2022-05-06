@@ -2,9 +2,6 @@ import json
 import re
 from xml import etree
 
-from sympy import public
-
-
 def get_source_method(source):
     if source == 'overstock':
         return parse_overstock
@@ -207,7 +204,6 @@ def parse_bolha(html_code):
         "Location": location,
         "Status": status,
         "Content": content
-
     }, ensure_ascii=False, indent=4)               
 
 
