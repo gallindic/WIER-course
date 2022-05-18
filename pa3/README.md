@@ -4,6 +4,7 @@
 1. Run `pip install -r requirements.txt`
 2. `cd implementation-indexing/utils`
 3. Run `python nltk_downloader.py` to download needed nltk data
+4. If you get "error: invalid path" during `git pull`, run `git config core.protectNTFS false`
 
 ### How to run indexer
 
