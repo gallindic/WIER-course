@@ -42,7 +42,7 @@ def clear_tables(conn):
     cursor.close()
 
 
-def insert_into_db(conn, document_name, postings):
+def insert_posting(conn, document_name, postings):
     cursor = conn.cursor()
 
     for word, posting in postings.items():
@@ -67,3 +67,46 @@ def insert_into_db(conn, document_name, postings):
         print(f"Inserted {word} from {document_name}")
 
     cursor.close()
+
+def insert_document_text(conn, document_name, document_text):
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute("INSERT INTO DocumentText VALUES (?, ?)", (document_name, document_text))
+    except sqlite3.Error as err:
+        print('Insert error:', err)
+        conn.close()
+        exit(-1)
+
+    conn.commit()
+    print(f"Inserted text from {document_name}")
+
+    cursor.close()
+
+def get_query_words(conn, words_query):
+    cursor = conn.cursor()
+
+    try:
+        search_query = "SELECT * FROM Posting WHERE word IN (" + "?, " * (len(words_query)-1) + "?)"
+        cursor.execute(search_query, words_query)
+        results = cursor.fetchall()
+    except Exception as e:
+        print("Query failed: %s" % e)
+        results = None
+    
+    cursor.close()
+    return results
+    
+def get_document_text(conn, site):
+    cursor = conn.cursor()
+
+    try:
+        query = 'SELECT text FROM DocumentText WHERE documentName = ?'
+        cursor.execute(query, (site,))
+        results = cursor.fetchone()
+    except Exception as e:
+        print("Query failed: %s" % e)
+        results = None
+    
+    cursor.close()
+    return results

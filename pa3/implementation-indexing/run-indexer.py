@@ -1,7 +1,7 @@
 import os
 from document import Document
 from argparse import ArgumentParser
-from db.db import connect_to_db, create_tables, clear_tables, insert_into_db
+from db.db import connect_to_db, create_tables, clear_tables, insert_posting, insert_document_text
 from utils.utils import read_documents
 
 
@@ -27,7 +27,9 @@ def main(args):
     print(len(documents))
 
     for doc in documents:
-        insert_into_db(conn, doc.get_name(), doc.get_postings())
+        #insert_posting(conn, doc.get_name(), doc.get_postings())
+        insert_document_text(conn, doc.get_name(), doc.get_document_text())
+
 
     conn.close()
 

@@ -10,3 +10,9 @@ CREATE TABLE Posting (
   PRIMARY KEY(word, documentName),
   FOREIGN KEY (word) REFERENCES IndexWord(word)
 );
+
+CREATE TABLE DocumentText (
+  documentName TEXT NOT NULL,
+  text TEXT,
+  PRIMARY KEY(documentName),
+)

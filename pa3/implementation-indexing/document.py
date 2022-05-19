@@ -17,8 +17,11 @@ class Document:
             for data in soup(['style', 'script']):
                 data.decompose()
 
+            self.document_text = soup.get_text()
+
             postings = {}
-            text_words = word_tokenize(soup.get_text())
+            text_words = word_tokenize(self.document_text)
+
 
             for idx, word in enumerate(text_words):
                 word_data = word.lower()
@@ -48,3 +51,6 @@ class Document:
 
     def get_name(self):
         return self.name
+
+    def get_document_text(self):
+        return self.document_text
