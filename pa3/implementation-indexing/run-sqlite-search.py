@@ -3,7 +3,7 @@ from db.db import connect_to_db, get_query_words, get_document_text
 from utils.utils import process_search_query
 import numpy as np
 from nltk import word_tokenize
-import time
+import datetime
 
 def arguments():
     parser = ArgumentParser()
@@ -15,13 +15,16 @@ def arguments():
 def main(args):
     conn = connect_to_db()
 
+    start_time = datetime.datetime.now()
+
     # Process query words (the same way as db entries are processed)
     words_query = process_search_query(args.query)
 
+    # Get all postings that contain query words
     results = get_query_words(conn, words_query)
 
+    # Count frequencies of words
     results_dict = dict()
-
     for posting in results:
         word, site, frequency, indices = posting
 
@@ -37,6 +40,7 @@ def main(args):
         document["frequency"] += frequency
         document["indices"].extend([int(i) for i in indices.split(",")])
 
+    # Sort the results by frequencies
     results_sorted = sorted(
         results_dict.values(),
         key=lambda doc: doc["frequency"],
@@ -59,8 +63,11 @@ def main(args):
         
         result_string += ("{0:<11} {1:<41} {2:<59}\n".format(result["frequency"], result["site"], "... " + " ... ".join(snippets) + " ..."))
 
+    end_time = datetime.datetime.now()
+    delta = end_time - start_time
+
     print('Results for a query: "%s"\n' % args.query)
-    print("Results found in %dms.\n" % 4)
+    print("Results found in %dms.\n" % int(delta.total_seconds() * 1000))
     print("{0:<11} {1:<41} {2:<59}".format("Frequencies", "Document", "Snippet"))
     print("{0:-<11} {1:-<41} {2:-<59}".format("", "", ""))
     print(result_string)
