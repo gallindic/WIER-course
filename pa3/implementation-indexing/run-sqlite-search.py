@@ -43,12 +43,12 @@ def main(args):
     # Sort the results by frequencies
     results_sorted = sorted(
         results_dict.values(),
-        key=lambda doc: doc["frequency"],
+        key=lambda doc: (doc["frequency"], doc["site"]),
         reverse=True
     )
 
+    # Construct snippets
     result_string = ""
-
     for result in results_sorted:
 
         document_text = get_document_text(conn, result["site"])
