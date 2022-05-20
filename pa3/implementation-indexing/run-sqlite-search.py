@@ -26,19 +26,19 @@ def main(args):
     # Count frequencies of words
     results_dict = dict()
     for posting in results:
-        word, site, frequency, indices = posting
+        word, site, frequency, indexes = posting
 
         if site not in results_dict:
             document = {
                 "frequency": 0,
-                "indices": [],
+                "indexes": [],
                 "site": site
             }
             results_dict[site] = document
         else: document = results_dict[site]
 
         document["frequency"] += frequency
-        document["indices"].extend([int(i) for i in indices.split(",")])
+        document["indexes"].extend([int(i) for i in indexes.split(",")])
 
     # Sort the results by frequencies
     results_sorted = sorted(
@@ -56,7 +56,7 @@ def main(args):
 
         snippets = list()
 
-        for index in result["indices"]:
+        for index in result["indexes"]:
             range = np.arange(index-3, index+4)
             snippet = " ".join([text_words[i] for i in range])
             snippets.append(snippet)

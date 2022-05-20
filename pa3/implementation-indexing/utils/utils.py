@@ -4,20 +4,17 @@ from nltk import word_tokenize
 from .stopwords import stop_words_slovene
 
 
-DOCUMENTS_PATH = '../data/'
-
-
-def read_documents():
+def read_documents(documents_path):
     documents = []
 
-    for domain in os.listdir(DOCUMENTS_PATH):
-        domain_dir = os.path.join(DOCUMENTS_PATH, domain)
+    for domain in os.listdir(documents_path):
+        domain_dir = os.path.join(documents_path, domain)
 
         for document in os.listdir(domain_dir):
             if '.html' not in document:
                 continue
 
-            print(f'Processing {document}')
+            #print(f'Processing {document}')
             documents.append(Document(document, os.path.join(domain_dir, document)))
 
     return documents

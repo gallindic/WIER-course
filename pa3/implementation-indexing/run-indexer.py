@@ -22,9 +22,7 @@ def main(args):
     if args.clear_tables:
         clear_tables(conn)
 
-    documents = read_documents()
-
-    print(len(documents))
+    documents = read_documents('../data/')
 
     for doc in documents:
         #insert_posting(conn, doc.get_name(), doc.get_postings())

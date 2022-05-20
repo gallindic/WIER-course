@@ -20,10 +20,9 @@ class Document:
             self.document_text = soup.get_text()
 
             postings = {}
-            text_words = word_tokenize(self.document_text)
+            self.text_words = word_tokenize(self.document_text)
 
-
-            for idx, word in enumerate(text_words):
+            for idx, word in enumerate(self.text_words):
                 word_data = word.lower()
 
                 if word_data in stop_words_slovene:
@@ -54,3 +53,6 @@ class Document:
 
     def get_document_text(self):
         return self.document_text
+
+    def get_text_words(self):
+        return self.text_words
