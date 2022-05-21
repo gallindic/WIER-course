@@ -72,6 +72,13 @@ def main(args):
     print("{0:-<11} {1:-<41} {2:-<59}".format("", "", ""))
     print(result_string)
 
+    """file = open('test.txt','w', encoding="utf8")
+    file.write('Results for a query: "%s"\n\n' % args.query)
+    file.write("Results found in %dms.\n\n" % int(delta.total_seconds() * 1000))
+    file.write("{0:<11} {1:<41} {2:<59}\n".format("Frequencies", "Document", "Snippet"))
+    file.write("{0:-<11} {1:-<41} {2:-<59}\n".format("", "", ""))
+    file.write(result_string)"""
+
     conn.close()
 
 
