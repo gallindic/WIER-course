@@ -1,6 +1,6 @@
 from argparse import ArgumentParser
 from db.db import connect_to_db, get_query_words, get_document_text
-from utils.utils import process_search_query
+from utils.utils import process_search_query, get_prefix
 import numpy as np
 from nltk import word_tokenize
 import datetime
@@ -61,7 +61,7 @@ def main(args):
             snippet = " ".join([text_words[i] for i in range])
             snippets.append(snippet)
         
-        result_string += ("{0:<11} {1:<41} {2:<59}\n".format(result["frequency"], result["site"], "... " + " ... ".join(snippets) + " ..."))
+        result_string += ("{0:<11} {1:<41} {2:<59}\n".format(result["frequency"], get_prefix(result["site"]), "... " + " ... ".join(snippets) + " ..."))
 
     end_time = datetime.datetime.now()
     delta = end_time - start_time

@@ -34,3 +34,12 @@ def process_search_query(query):
             query_words.append(word)
     
     return query_words
+
+def get_prefix(url):
+    if "e-prostor.gov.si" in url: prefix = "e-prostor.gov.si/"
+    elif "e-uprava.gov.si" in url: prefix = "e-uprava.gov.si/"
+    elif "evem.gov.si" in url: prefix = "evem.gov.si/"
+    elif "podatki.gov.si" in url: prefix = "podatki.gov.si/"
+    else: raise NotImplementedError
+
+    return prefix + url
