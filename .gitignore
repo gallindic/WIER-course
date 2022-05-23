@@ -2,3 +2,4 @@ pa1/crawler/db/db.ini
 pa1/**/__pycache__
 pa2/**/__pycache__
 pa3/**/__pycache__
+pa3/implementation-indexing/db/inverted-index.db-journal
