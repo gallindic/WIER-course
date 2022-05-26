@@ -26,7 +26,7 @@ def main(args):
         frequency = 0
         indexes = list()
         # If document contains word
-        for word in words_query:
+        for word in sorted(words_query):
             if word in doc.postings.keys():
                 frequency += doc.postings[word]["frequency"]
                 indexes.extend(doc.postings[word]["indexes"])
@@ -71,9 +71,6 @@ def main(args):
     print("{0:<11} {1:<41} {2:<59}".format("Frequencies", "Document", "Snippet"))
     print("{0:-<11} {1:-<41} {2:-<59}".format("", "", ""))
     print(result_string)
-
-    print('Results for a query: "%s"\n' % args.query)
-    print("Results found in %dms.\n" % int(delta.total_seconds() * 1000))
 
 
 if __name__ == "__main__":
